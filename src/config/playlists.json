@@ -1,8 +1,8 @@
 {
   "playlists": [
     {
-      "name": "Ar News",
-      "playlistId": "PL_ARG_NEWS_ALL",
+      "name": "ArNews",
+      "playlistId": "PLphugLQzZ1wI15oosKcX6FwdH3P0FADTj",
       "channels": [
         "UCj6PcyLvpnIRT_2W_mwa9Aw", 
         "UCba3hpU7EFBSk817y9qZkiA",
@@ -17,8 +17,8 @@
       ]
     },
     {
-      "name": "Ar Streaming ",
-      "playlistId": "PL_ARG_STREAMING",
+      "name": "ArStream",
+      "playlistId": "PLphugLQzZ1wLA0hpDuC-UuDne_GRAcAm4",
       "channels": [
         "UC7KTy0d4S2E1dVYjC9H4x6A",
         "UCTHaNTsP7hsVgBxARZTuajw",
