@@ -6,11 +6,34 @@ export class APIClient {
   private maxRetries: number = 3;
   private baseDelay: number = 1000; // 1 second
 
-  constructor(baseURL: string, timeout: number = 30000) {
+  constructor(
+    baseURL: string,
+    timeout: number = 30000,
+    private authProvider?: () => Promise<string>
+  ) {
     this.client = axios.create({
       baseURL,
       timeout,
     });
+
+    // Add request interceptor to inject OAuth token if auth provider is configured
+    if (authProvider) {
+      this.client.interceptors.request.use(
+        async (config) => {
+          try {
+            const token = await this.authProvider!();
+            config.headers.Authorization = `Bearer ${token}`;
+          } catch (error) {
+            logger.error('Failed to get access token', error);
+            throw error;
+          }
+          return config;
+        },
+        (error) => {
+          return Promise.reject(error);
+        }
+      );
+    }
   }
 
   private async sleep(ms: number): Promise<void> {

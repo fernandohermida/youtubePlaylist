@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SyncService } from '../src/services/sync.service';
+import { OAuthClient } from '../src/auth/oauth-client';
 import { loadConfig } from '../src/config/schema';
 import { logger } from '../src/utils/logger';
 
@@ -12,12 +13,15 @@ export default async function handler(
   try {
     logger.info('Starting YouTube Live Playlist sync job');
 
-    const apiKey = process.env.YOUTUBE_API_KEY;
-    if (!apiKey) {
-      logger.error('YOUTUBE_API_KEY environment variable is not set');
+    const clientId = process.env.YOUTUBE_OAUTH_CLIENT_ID;
+    const clientSecret = process.env.YOUTUBE_OAUTH_CLIENT_SECRET;
+    const refreshToken = process.env.YOUTUBE_OAUTH_REFRESH_TOKEN;
+
+    if (!clientId || !clientSecret || !refreshToken) {
+      logger.error('OAuth environment variables not configured');
       res.status(500).json({
         success: false,
-        error: 'YOUTUBE_API_KEY not configured',
+        error: 'OAuth credentials not configured. Please set YOUTUBE_OAUTH_CLIENT_ID, YOUTUBE_OAUTH_CLIENT_SECRET, and YOUTUBE_OAUTH_REFRESH_TOKEN.',
       });
       return;
     }
@@ -25,7 +29,13 @@ export default async function handler(
     const config = loadConfig();
     logger.info(`Loaded configuration with ${config.playlists.length} playlists`);
 
-    const syncService = new SyncService(apiKey);
+    const oauthClient = new OAuthClient({
+      clientId,
+      clientSecret,
+      refreshToken,
+    });
+
+    const syncService = new SyncService(oauthClient);
     const results = await syncService.syncAllPlaylists(config);
 
     const executionTime = Date.now() - startTime;

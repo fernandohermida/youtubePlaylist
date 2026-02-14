@@ -1,4 +1,5 @@
 import { YouTubeService } from './youtube.service';
+import { OAuthClient } from '../auth/oauth-client';
 import { arrayDiff } from '../utils/diff';
 import { logger } from '../utils/logger';
 import type { AppConfig, PlaylistConfig, SyncResult, LiveStream, PlaylistVideo } from '../types';
@@ -6,8 +7,8 @@ import type { AppConfig, PlaylistConfig, SyncResult, LiveStream, PlaylistVideo }
 export class SyncService {
   private youtubeService: YouTubeService;
 
-  constructor(apiKey: string) {
-    this.youtubeService = new YouTubeService(apiKey);
+  constructor(oauthClient: OAuthClient) {
+    this.youtubeService = new YouTubeService(oauthClient);
   }
 
   async syncAllPlaylists(config: AppConfig): Promise<SyncResult[]> {

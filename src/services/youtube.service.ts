@@ -1,4 +1,5 @@
 import { APIClient } from '../utils/api-client';
+import { OAuthClient } from '../auth/oauth-client';
 import { logger } from '../utils/logger';
 import type {
   LiveStream,
@@ -9,11 +10,13 @@ import type {
 
 export class YouTubeService {
   private apiClient: APIClient;
-  private apiKey: string;
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-    this.apiClient = new APIClient('https://www.googleapis.com/youtube/v3');
+  constructor(private oauthClient: OAuthClient) {
+    this.apiClient = new APIClient(
+      'https://www.googleapis.com/youtube/v3',
+      30000,
+      () => this.oauthClient.getValidAccessToken()
+    );
   }
 
   async getChannelLiveStreams(channelId: string): Promise<LiveStream[]> {
@@ -26,7 +29,6 @@ export class YouTubeService {
         eventType: 'live',
         type: 'video',
         maxResults: 50,
-        key: this.apiKey,
       });
 
       const liveStreams: LiveStream[] = response.items.map((item) => ({
@@ -56,7 +58,6 @@ export class YouTubeService {
           part: 'snippet',
           playlistId,
           maxResults: 50,
-          key: this.apiKey,
         };
 
         if (pageToken) {
@@ -89,8 +90,7 @@ export class YouTubeService {
     try {
       logger.debug(`Adding video ${videoId} to playlist ${playlistId}`);
 
-      await this.apiClient.post('/playlistItems', {
-        part: 'snippet',
+      await this.apiClient.post('/playlistItems?part=snippet', {
         snippet: {
           playlistId,
           resourceId: {
@@ -98,7 +98,6 @@ export class YouTubeService {
             videoId,
           },
         },
-        key: this.apiKey,
       });
 
       logger.info(`Successfully added video ${videoId} to playlist ${playlistId}`);
@@ -117,7 +116,6 @@ export class YouTubeService {
 
       await this.apiClient.delete('/playlistItems', {
         id: playlistItemId,
-        key: this.apiKey,
       });
 
       logger.info(`Successfully removed playlist item ${playlistItemId}`);
