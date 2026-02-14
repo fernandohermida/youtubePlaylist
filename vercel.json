@@ -1,4 +1,5 @@
 {
+  "buildCommand": "",
   "crons": [
     {
       "path": "/api/cron",
