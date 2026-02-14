@@ -19,9 +19,10 @@ export class YouTubeService {
     );
   }
 
-  async getChannelLiveStreams(channelId: string): Promise<LiveStream[]> {
+  async getChannelLiveStreams(channelId: string, channelName?: string): Promise<LiveStream[]> {
     try {
-      logger.debug(`Fetching live streams for channel: ${channelId}`);
+      const channelLabel = channelName ? `${channelName} (${channelId})` : channelId;
+      logger.debug(`Fetching live streams for channel: ${channelLabel}`);
 
       const response = await this.apiClient.get<YouTubeSearchResponse>('/search', {
         part: 'snippet',
@@ -34,14 +35,16 @@ export class YouTubeService {
       const liveStreams: LiveStream[] = response.items.map((item) => ({
         videoId: item.id.videoId,
         channelId: item.snippet.channelId,
+        channelName: channelName,
         title: item.snippet.title,
         startedAt: item.snippet.publishedAt,
       }));
 
-      logger.info(`Found ${liveStreams.length} live streams for channel ${channelId}`);
+      logger.info(`Found ${liveStreams.length} live streams for channel ${channelLabel}`);
       return liveStreams;
     } catch (error) {
-      logger.error(`Failed to fetch live streams for channel ${channelId}`, error);
+      const channelLabel = channelName ? `${channelName} (${channelId})` : channelId;
+      logger.error(`Failed to fetch live streams for channel ${channelLabel}`, error);
       throw error;
     }
   }
@@ -86,7 +89,7 @@ export class YouTubeService {
     }
   }
 
-  async addVideoToPlaylist(playlistId: string, videoId: string): Promise<void> {
+  async addVideoToPlaylist(playlistId: string, videoId: string, stream?: LiveStream): Promise<void> {
     try {
       logger.debug(`Adding video ${videoId} to playlist ${playlistId}`);
 
@@ -100,10 +103,19 @@ export class YouTubeService {
         },
       });
 
-      logger.info(`Successfully added video ${videoId} to playlist ${playlistId}`);
+      if (stream?.channelName) {
+        logger.info(
+          `✓ Added: https://youtube.com/watch?v=${videoId} from ${stream.channelName} (https://youtube.com/channel/${stream.channelId})`
+        );
+      } else {
+        logger.info(
+          `✓ Added: https://youtube.com/watch?v=${videoId} (Channel: https://youtube.com/channel/${stream?.channelId || 'unknown'})`
+        );
+      }
     } catch (error) {
+      const channelLabel = stream?.channelName ? `${stream.channelName} (${stream.channelId})` : stream?.channelId || 'unknown';
       logger.error(
-        `Failed to add video ${videoId} to playlist ${playlistId}`,
+        `Failed to add video ${videoId} from ${channelLabel} to playlist ${playlistId}`,
         error
       );
       throw error;
@@ -127,16 +139,17 @@ export class YouTubeService {
 
   async batchAddVideos(
     playlistId: string,
-    videoIds: string[]
+    streams: LiveStream[]
   ): Promise<void> {
-    logger.info(`Adding ${videoIds.length} videos to playlist ${playlistId}`);
+    logger.info(`Adding ${streams.length} videos to playlist ${playlistId}`);
 
-    for (const videoId of videoIds) {
+    for (const stream of streams) {
       try {
-        await this.addVideoToPlaylist(playlistId, videoId);
+        await this.addVideoToPlaylist(playlistId, stream.videoId, stream);
         await this.sleep(200);
       } catch (error) {
-        logger.error(`Failed to add video ${videoId}, continuing with next`, error);
+        const channelLabel = stream.channelName ? `${stream.channelName} (${stream.channelId})` : stream.channelId;
+        logger.error(`Failed to add video ${stream.videoId} from ${channelLabel}, continuing with next`, error);
       }
     }
   }

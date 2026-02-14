@@ -3,6 +3,7 @@ import { SyncService } from '../src/services/sync.service';
 import { OAuthClient } from '../src/auth/oauth-client';
 import { loadConfig } from '../src/config/schema';
 import { logger } from '../src/utils/logger';
+import { ReportFormatter, isReportEnabled } from '../src/utils/report-formatter';
 
 export default async function handler(
   req: VercelRequest,
@@ -54,10 +55,26 @@ export default async function handler(
 
     logger.info('Sync job completed', summary);
 
+    // Generate and log CLI-style report
+    if (isReportEnabled()) {
+      const report = ReportFormatter.formatSyncReport(summary);
+      console.log('\n' + report + '\n');
+    }
+
     res.status(200).json(summary);
   } catch (error) {
     const executionTime = Date.now() - startTime;
     logger.error('Sync job failed', error);
+
+    // Generate error report
+    if (isReportEnabled()) {
+      console.log('\n' + '='.repeat(80));
+      console.log('         SYNC JOB FAILED');
+      console.log('='.repeat(80));
+      console.log(`Execution Time: ${(executionTime / 1000).toFixed(2)}s`);
+      console.log(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.log('='.repeat(80) + '\n');
+    }
 
     res.status(500).json({
       success: false,

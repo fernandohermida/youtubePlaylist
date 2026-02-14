@@ -2,7 +2,7 @@ import { YouTubeService } from './youtube.service';
 import { OAuthClient } from '../auth/oauth-client';
 import { arrayDiff } from '../utils/diff';
 import { logger } from '../utils/logger';
-import type { AppConfig, PlaylistConfig, SyncResult, LiveStream, PlaylistVideo } from '../types';
+import type { AppConfig, PlaylistConfig, SyncResult, LiveStream, PlaylistVideo, ChannelConfig, Channel } from '../types';
 
 export class SyncService {
   private youtubeService: YouTubeService;
@@ -44,6 +44,8 @@ export class SyncService {
       videosAdded: 0,
       videosRemoved: 0,
       errors: [],
+      addedVideos: [],
+      removedVideos: [],
     };
 
     const liveStreams = await this.discoverLiveStreams(config.channels);
@@ -66,15 +68,26 @@ export class SyncService {
     );
 
     if (diff.toAdd.length > 0) {
-      const videoIdsToAdd = diff.toAdd.map((v) => v.videoId);
-      await this.youtubeService.batchAddVideos(config.playlistId, videoIdsToAdd);
-      result.videosAdded = videoIdsToAdd.length;
+      const streamsToAdd = diff.toAdd.map((v) => {
+        return liveStreams.find((stream) => stream.videoId === v.videoId)!;
+      });
+      await this.youtubeService.batchAddVideos(config.playlistId, streamsToAdd);
+      result.videosAdded = streamsToAdd.length;
+      result.addedVideos = streamsToAdd.map((stream) => ({
+        videoId: stream.videoId,
+        title: stream.title,
+        channelId: stream.channelId,
+        channelName: stream.channelName,
+      }));
     }
 
     if (diff.toRemove.length > 0) {
       const playlistItemIdsToRemove = diff.toRemove.map((v) => v.playlistItemId);
       await this.youtubeService.batchRemoveVideos(playlistItemIdsToRemove);
       result.videosRemoved = playlistItemIdsToRemove.length;
+      result.removedVideos = diff.toRemove.map((v) => ({
+        videoId: v.videoId,
+      }));
     }
 
     logger.info(
@@ -84,17 +97,26 @@ export class SyncService {
     return result;
   }
 
-  private async discoverLiveStreams(channelIds: string[]): Promise<LiveStream[]> {
-    logger.debug(`Discovering live streams from ${channelIds.length} channels`);
+  private normalizeChannel(channel: ChannelConfig): Channel {
+    if (typeof channel === 'string') {
+      return { id: channel };
+    }
+    return channel;
+  }
+
+  private async discoverLiveStreams(channelConfigs: ChannelConfig[]): Promise<LiveStream[]> {
+    logger.debug(`Discovering live streams from ${channelConfigs.length} channels`);
 
     const allLiveStreams: LiveStream[] = [];
 
-    for (const channelId of channelIds) {
+    for (const channelConfig of channelConfigs) {
+      const channel = this.normalizeChannel(channelConfig);
       try {
-        const liveStreams = await this.youtubeService.getChannelLiveStreams(channelId);
+        const liveStreams = await this.youtubeService.getChannelLiveStreams(channel.id, channel.name);
         allLiveStreams.push(...liveStreams);
       } catch (error) {
-        logger.error(`Failed to fetch live streams for channel ${channelId}`, error);
+        const channelLabel = channel.name ? `${channel.name} (${channel.id})` : channel.id;
+        logger.error(`Failed to fetch live streams for channel ${channelLabel}`, error);
       }
     }
 

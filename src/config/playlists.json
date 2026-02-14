@@ -4,27 +4,29 @@
       "name": "ArNews",
       "playlistId": "PLphugLQzZ1wI15oosKcX6FwdH3P0FADTj",
       "channels": [
-        "UCj6PcyLvpnIRT_2W_mwa9Aw", 
-        "UCba3hpU7EFBSk817y9qZkiA",
-        "UCvsye7V9psc-APX6wV1twLg",
-        "UChxGASjdNEYHhVKpl667Huw",
-        "UCs231K71Bnu5295_x0MB5Pg",
-        "UC0r9n7GkY7Vx2E9YJXzFQnNQg",
-        "UC5Kx5s0XJ1y8A9kaGb0s8bA",
-        "UCx5p7mW6dK5E4VnznrsCG2A",
-        "UCqZQlzSHbVJrwrn5XvzrzcA",
-        "UC3OZ7k7P0xR4V9cZkG7X6Yg"
+        
+        { "id": "UCT4Jg8h03dD0iN3Pb5L0PMA", "name": "DW Es" },
+        { "id": "UCj6PcyLvpnIRT_2W_mwa9Aw", "name": "C5N" },
+        { "id": "UCba3hpU7EFBSk817y9qZkiA", "name": "A24" },
+        { "id": "UCvsye7V9psc-APX6wV1twLg", "name": "TN" },
+        { "id": "UChxGASjdNEYHhVKpl667Huw", "name": "La Nación +" },
+        { "id": "UCs231K71Bnu5295_x0MB5Pg", "name": "Crónica TV" },
+        { "id": "UC0r9n7GkY7Vx2E9YJXzFQ", "name": "Canal 26" },
+        { "id": "UC5Kx5s0XJ1y8A9kaGb0s8bA", "name": "IP Noticias" },
+        { "id": "UCx5p7mW6dK5E4VnznrsCG2A", "name": "Televisión Pública" },
+        { "id": "UCqZQlzSHbVJrwrn5XvzrzcA", "name": "El Destape" },
+        { "id": "UCs231K71Bnu5295_x0MB5Pg", "name": "Crónica TV" }
       ]
     },
     {
       "name": "ArStream",
       "playlistId": "PLphugLQzZ1wLA0hpDuC-UuDne_GRAcAm4",
       "channels": [
-        "UC7KTy0d4S2E1dVYjC9H4x6A",
-        "UCTHaNTsP7hsVgBxARZTuajw",
-        "UCkqJQ9n7V9E8W6yT2gX4F3Q",
-        "UCn7mE5V2s6pK4R1xY9B3Z8A",
-        "UCp0Jp0Y0x1y2z3A4B5C6D7E"
+        { "id": "UC7KTy0d4S2E1dVYjC9H4x6A", "name": "Luzu TV" },
+        { "id": "UCTHaNTsP7hsVgBxARZTuajw", "name": "OLGA" },
+        { "id": "UCkqJQ9n7V9E8W6yT2gX4F3Q", "name": "Vorterix" },
+        { "id": "UCn7mE5V2s6pK4R1xY9B3Z8A", "name": "Urbana Play" },
+        { "id": "UCp0Jp0Y0x1y2z3A4B5C6D7E", "name": "Blender" }
       ]
     }
   ]

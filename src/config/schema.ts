@@ -3,6 +3,15 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import type { AppConfig, PlaylistConfig } from '../types';
 
+// Channel can be either a string ID or an object with id and optional name
+const ChannelSchema = z.union([
+  z.string().regex(/^UC[\w-]+$/, 'Invalid YouTube channel ID format (must start with UC)'),
+  z.object({
+    id: z.string().regex(/^UC[\w-]+$/, 'Invalid YouTube channel ID format (must start with UC)'),
+    name: z.string().optional(),
+  }),
+]);
+
 const PlaylistConfigSchema = z.object({
   name: z.string().min(1, 'Playlist name is required'),
   playlistId: z
@@ -10,11 +19,7 @@ const PlaylistConfigSchema = z.object({
     .min(1, 'Playlist ID is required')
     .regex(/^PL[\w-]+$/, 'Invalid YouTube playlist ID format (must start with PL)'),
   channels: z
-    .array(
-      z
-        .string()
-        .regex(/^UC[\w-]+$/, 'Invalid YouTube channel ID format (must start with UC)')
-    )
+    .array(ChannelSchema)
     .min(1, 'At least one channel is required'),
 });
 

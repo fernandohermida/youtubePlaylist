@@ -1,7 +1,14 @@
+export interface Channel {
+  id: string;
+  name?: string;
+}
+
+export type ChannelConfig = string | Channel;
+
 export interface PlaylistConfig {
   name: string;
   playlistId: string;
-  channels: string[];
+  channels: ChannelConfig[];
 }
 
 export interface AppConfig {
@@ -11,6 +18,7 @@ export interface AppConfig {
 export interface LiveStream {
   videoId: string;
   channelId: string;
+  channelName?: string;
   title: string;
   startedAt: string;
 }
@@ -20,12 +28,21 @@ export interface PlaylistVideo {
   videoId: string; // For comparison/deduplication
 }
 
+export interface VideoChangeDetail {
+  videoId: string;
+  title?: string;
+  channelId?: string;
+  channelName?: string;
+}
+
 export interface SyncResult {
   playlistName: string;
   liveStreamsFound: number;
   videosAdded: number;
   videosRemoved: number;
   errors: string[];
+  addedVideos?: VideoChangeDetail[];
+  removedVideos?: VideoChangeDetail[];
 }
 
 export interface YouTubeSearchResponse {
