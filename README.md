@@ -160,21 +160,23 @@ Configured in `vercel.json`:
 
 **Default quota:** 10,000 units/day
 
-**Example (6-hour cron, 2 playlists, 15 channels total):**
-- 4 runs/day
+**Example (daily cron - Vercel free tier, 2 playlists, 15 channels total):**
+- 1 run/day
 - 15 search calls/run = 1,500 units
 - ~4 insert/delete = ~200 units
 - **Total per run: ~1,700 units**
-- **Daily total: ~6,800 units/day**
+- **Daily total: ~1,700 units/day**
 
-This is within the default quota! For higher frequencies:
+This is well within the default quota! For higher frequencies (requires Vercel Pro plan):
 
-1. **Hourly cron:** ~19,000 units/day (requires quota increase)
-2. **Every 15 minutes:** ~77,000 units/day (requires quota increase to 100,000)
 
-**To request quota increase:**
+**To request YouTube API quota increase:**
 - Go to [Google Cloud Console](https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas)
 - Request increase (takes 1-2 weeks)
+
+**To upgrade Vercel plan for more frequent crons:**
+- Go to [Vercel Dashboard](https://vercel.com/dashboard) → Settings → Billing
+- Upgrade to Pro plan ($20/month)
 
 ### Monitor Quota Usage
 
@@ -317,14 +319,6 @@ npm run type-check
 - Processes playlists sequentially
 - Subject to YouTube API quota limits
 - Vercel cron requires paid plan for high frequency
-
-## Future Enhancements
-
-- Add caching (Vercel KV) to reduce API calls
-- Webhook-based updates instead of polling
-- Discord/Slack notifications for errors
-- Web UI for managing playlists
-- Multiple playlist strategies (top N streams, priority channels)
 
 ## License
 
