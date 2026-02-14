@@ -2,7 +2,6 @@
   "name": "youtube-live-playlist-sync",
   "version": "1.0.0",
   "description": "Automatically sync YouTube playlists with currently live streams from configured channels",
-  "main": "dist/api/cron.js",
   "scripts": {
     "dev": "vercel dev",
     "build": "tsc",
