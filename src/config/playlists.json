@@ -1,0 +1,31 @@
+{
+  "playlists": [
+    {
+      "name": "Ar News",
+      "playlistId": "PL_ARG_NEWS_ALL",
+      "channels": [
+        "UCj6PcyLvpnIRT_2W_mwa9Aw", 
+        "UCba3hpU7EFBSk817y9qZkiA",
+        "UCvsye7V9psc-APX6wV1twLg",
+        "UChxGASjdNEYHhVKpl667Huw",
+        "UCs231K71Bnu5295_x0MB5Pg",
+        "UC0r9n7GkY7Vx2E9YJXzFQnNQg",
+        "UC5Kx5s0XJ1y8A9kaGb0s8bA",
+        "UCx5p7mW6dK5E4VnznrsCG2A",
+        "UCqZQlzSHbVJrwrn5XvzrzcA",
+        "UC3OZ7k7P0xR4V9cZkG7X6Yg"
+      ]
+    },
+    {
+      "name": "Ar Streaming ",
+      "playlistId": "PL_ARG_STREAMING",
+      "channels": [
+        "UC7KTy0d4S2E1dVYjC9H4x6A",
+        "UCTHaNTsP7hsVgBxARZTuajw",
+        "UCkqJQ9n7V9E8W6yT2gX4F3Q",
+        "UCn7mE5V2s6pK4R1xY9B3Z8A",
+        "UCp0Jp0Y0x1y2z3A4B5C6D7E"
+      ]
+    }
+  ]
+}
