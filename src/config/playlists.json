@@ -6,6 +6,7 @@
       "channels": [
         
         { "id": "UCT4Jg8h03dD0iN3Pb5L0PMA", "name": "DW Es" },
+        { "id": "UCUdOoVWuWmgo1wByzcsyKDQ", "name": "FRANCE 24 Español" },
         { "id": "UCFgk2Q2mVO1BklRQhSv6p0w", "name": "C5N" },
         { "id": "UCR9120YBAqMfntqgRTKmkjQ", "name": "A24" },
         { "id": "UCvsye7V9psc-APX6wV1twLg", "name": "TN" },
@@ -14,6 +15,7 @@
         { "id": "UCbxnq2sKBgDl5poaKrUSs_Q", "name": "IP Noticias" },
         { "id": "UCs231K71Bnu5295_x0MB5Pg", "name": "Televisión Pública" },
         { "id": "UC5wAqJ9NF0fpGH9dVf3h6HA", "name": "El Destape" },
+        { "id": "UC6NVDkuzY2exMOVFw4i9oHw", "name": "América TV" },
         { "id": "UCT7KFGv6s2a-rh2Jq8ZdM1g", "name": "Crónica TV" }
       ]
     },
