@@ -132,17 +132,18 @@ Configured in `vercel.json`:
 {
   "crons": [{
     "path": "/api/cron",
-    "schedule": "0 */6 * * *"  // Every 6 hours
+    "schedule": "0 0 * * *"  // Daily at midnight (00:00)
   }]
 }
 ```
 
 **Cron Format:** `minute hour day month weekday`
-- `0 */6 * * *` = Every 6 hours (current)
-- `0 * * * *` = Every hour
-- `*/15 * * * *` = Every 15 minutes
+- `0 0 * * *` = Daily at midnight (current - Vercel free tier)
+- `0 */6 * * *` = Every 6 hours (requires Pro plan)
+- `0 * * * *` = Every hour (requires Pro plan)
+- `*/15 * * * *` = Every 15 minutes (requires Pro plan)
 
-**Note:** Frequent runs consume more API quota. See [Quota Management](#quota-management) below.
+**Note:** Vercel Hobby (free) accounts are limited to daily cron jobs. Upgrade to Pro for higher frequencies.
 
 ## API Quota Management
 
