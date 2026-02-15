@@ -16,6 +16,7 @@
         { "id": "UCs231K71Bnu5295_x0MB5Pg", "name": "Televisión Pública" },
         { "id": "UC5wAqJ9NF0fpGH9dVf3h6HA", "name": "El Destape" },
         { "id": "UC6NVDkuzY2exMOVFw4i9oHw", "name": "América TV" },
+        { "id": "UChxGASjdNEYHhVKpl667Huw", "name": "Telefe Noticias" },
         { "id": "UCT7KFGv6s2a-rh2Jq8ZdM1g", "name": "Crónica TV" }
       ]
     },
@@ -27,7 +28,10 @@
         { "id": "UC7mJ2EDXFomeDIRFu5FtEbA", "name": "OLGA" },
         { "id": "UCvCTWHCbBC0b9UIeLeNs8ug", "name": "Vorterix" },
         { "id": "UCC1kfsMJko54AqxtcFECt-A", "name": "Urbana Play" },
-        { "id": "UC6pJGaMdx5Ter_8zYbLoRgA", "name": "Blender" }
+        { "id": "UC6pJGaMdx5Ter_8zYbLoRgA", "name": "Blender" },
+        { "id": "UCgn6r0aGRBnEQm02tE_jzbw", "name": "Futurock FM" },
+        { "id": "UCWSfXECGo1qK_H7SXRaUSMg", "name": "GELATINA" },
+        { "id": "UCnZidingmuqNkaT9Wm64Xxg", "name": "Bondi Live" }
       ]
     }
   ]
