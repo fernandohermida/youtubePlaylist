@@ -1,7 +1,7 @@
 {
   "playlists": [
     {
-      "name": "ArNews",
+      "name": "Arg News",
       "playlistId": "PLphugLQzZ1wI15oosKcX6FwdH3P0FADTj",
       "channels": [        
         { "id": "UCT4Jg8h03dD0iN3Pb5L0PMA", "name": "DW Es" },
@@ -18,7 +18,7 @@
       ]
     },
     {
-      "name": "ArStream",
+      "name": "Arg Stream",
       "playlistId": "PLphugLQzZ1wLA0hpDuC-UuDne_GRAcAm4",
       "channels": [
         { "id": "UCTHaNTsP7hsVgBxARZTuajw", "name": "Luzu TV" },

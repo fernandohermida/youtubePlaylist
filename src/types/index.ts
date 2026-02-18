@@ -80,7 +80,10 @@ export interface YouTubePlaylistListItem {
   id: string;
   snippet: {
     thumbnails: {
-      medium?: { url: string; width: number; height: number };
+      default?: { url: string; width: number; height: number };
+      medium?:  { url: string; width: number; height: number };
+      high?:    { url: string; width: number; height: number };
+      maxres?:  { url: string; width: number; height: number };
     };
   };
   contentDetails: {
