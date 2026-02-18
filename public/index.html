@@ -3,201 +3,420 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Playlist Sync</title>
+  <title>▶ YT Playlist Sync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
   <style>
+    /* ─── Reset ───────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ─── CSS Variables ───────────────────────────────────── */
+    :root {
+      --bg:        #080808;
+      --surface:   #111111;
+      --border:    #1e1e1e;
+      --border-hi: #2a2a2a;
+      --red:       #e60000;
+      --red-hi:    #ff3333;
+      --text:      #e0e0e0;
+      --muted:     #555555;
+      --faint:     #2a2a2a;
+      --mono: 'IBM Plex Mono', 'Courier New', monospace;
+      --sans: 'Barlow Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    /* ─── Body + scanlines ────────────────────────────────── */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0f0f0f;
-      color: #e0e0e0;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      padding: 40px 16px;
     }
 
-    h1 {
-      text-align: center;
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: #fff;
-      margin-bottom: 6px;
-      letter-spacing: -0.01em;
+    /* Full-page scanline overlay — pointer-events:none so it's purely visual */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.028) 2px,
+        rgba(0,0,0,0.028) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
     }
 
-    .subtitle {
-      text-align: center;
-      font-size: 0.82rem;
-      color: #666;
-      margin-bottom: 36px;
+    /* ─── Top accent stripe ───────────────────────────────── */
+    .accent-stripe {
+      height: 3px;
+      background: linear-gradient(90deg, var(--red), #ff6666, var(--red), #cc0000, var(--red));
+      background-size: 300% 100%;
+      animation: stripe-flow 4s linear infinite;
+    }
+    @keyframes stripe-flow {
+      0%   { background-position: 0% 0%; }
+      100% { background-position: 300% 0%; }
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
-      max-width: 880px;
-      margin: 0 auto;
-    }
-
-    .card {
-      background: #1a1a1a;
-      border: 1px solid #272727;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .thumbnail-wrap {
-      position: relative;
-      width: 100%;
-      padding-top: 56.25%;
-      background: #222;
-      overflow: hidden;
-    }
-
-    .thumbnail-wrap img {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-    }
-
-    .thumb-placeholder {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+    /* ─── Sticky header ───────────────────────────────────── */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
       display: flex;
       align-items: center;
-      justify-content: center;
-      color: #444;
-      font-size: 0.8rem;
-    }
-
-    .card-body {
-      padding: 16px;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: flex-start;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 12px;
+      background: rgba(8,8,8,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 24px;
     }
 
-    .card-title {
-      font-size: 1.05rem;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .badge {
-      flex-shrink: 0;
-      background: #cc0000;
-      color: #fff;
+    .on-air {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--mono);
       font-size: 0.68rem;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 20px;
-      white-space: nowrap;
-      letter-spacing: 0.02em;
+      font-weight: 500;
+      color: var(--red);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .blink-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--red);
+      border-radius: 50%;
+      box-shadow: 0 0 5px var(--red);
+      animation: blink-dot 1s step-end infinite;
+    }
+    @keyframes blink-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
     }
 
-    .yt-link {
-      display: inline-block;
-      margin-bottom: 12px;
-      font-size: 0.78rem;
-      color: #ff4444;
+    .site-title {
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .header-meta {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+      text-align: right;
+    }
+    .header-meta .sync-label { display: block; }
+    .header-meta .last-sync  { display: block; color: var(--faint); font-size: 0.58rem; }
+
+    /* ─── Main layout ─────────────────────────────────────── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 16px 60px;
+    }
+
+    /* ─── Feed (playlist cards stacked) ──────────────────── */
+    #feed {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ─── Card ────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      opacity: 0;
+      animation: fade-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Thumbnail ───────────────────────────────────────── */
+    .thumb-link {
+      display: block;
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%; /* 16:9 */
+      overflow: hidden;
+      background: #0e0e0e;
       text-decoration: none;
     }
-    .yt-link:hover { text-decoration: underline; }
-
-    .meta {
-      font-size: 0.76rem;
-      color: #666;
-      margin-bottom: 12px;
-      line-height: 1.6;
-    }
-
-    .toggle-btn {
-      background: none;
-      border: 1px solid #2e2e2e;
-      color: #888;
-      font-size: 0.76rem;
-      padding: 5px 10px;
-      border-radius: 6px;
-      cursor: pointer;
+    .thumb-img {
+      position: absolute;
+      inset: 0;
       width: 100%;
-      text-align: left;
-    }
-    .toggle-btn:hover { background: #222; color: #aaa; }
-
-    .channel-list {
-      margin-top: 8px;
-      max-height: 190px;
-      overflow-y: auto;
-      border: 1px solid #222;
-      border-radius: 6px;
-      padding: 6px 0;
-    }
-    .channel-list.hidden { display: none; }
-
-    .channel-item {
-      padding: 4px 12px;
-      font-size: 0.76rem;
-      color: #bbb;
-      line-height: 1.6;
-    }
-    .channel-id {
+      height: 100%;
+      object-fit: cover;
       display: block;
+      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .thumb-link:hover .thumb-img { transform: scale(1.025); }
+
+    /* Bottom gradient overlay */
+    .thumb-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+      padding: 32px 18px 16px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+    }
+    .thumb-title {
+      font-family: var(--sans);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+      line-height: 1;
+    }
+    .thumb-cta {
+      font-family: var(--mono);
       font-size: 0.68rem;
-      color: #444;
+      color: var(--red-hi);
+      white-space: nowrap;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 10px rgba(230,0,0,0.6);
+      pointer-events: auto;
+      padding: 5px 10px;
+      border: 1px solid rgba(230,0,0,0.3);
+      border-radius: 4px;
+      background: rgba(230,0,0,0.08);
+      transition: background 0.15s, border-color 0.15s;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .thumb-link:hover .thumb-cta {
+      background: rgba(230,0,0,0.18);
+      border-color: rgba(230,0,0,0.6);
     }
 
-    /* States */
-    #state-loading, #state-error, #state-empty {
+    /* "PLAYLIST" label — top right */
+    .thumb-type-label {
+      position: absolute;
+      top: 11px;
+      right: 11px;
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      color: rgba(255,255,255,0.25);
+      letter-spacing: 0.14em;
+      background: rgba(0,0,0,0.55);
+      padding: 3px 7px;
+      border-radius: 3px;
+      border: 1px solid rgba(255,255,255,0.07);
+      text-transform: uppercase;
+    }
+
+    /* LIVE badge — top left */
+    .live-badge {
+      position: absolute;
+      top: 11px;
+      left: 11px;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 4px;
+      letter-spacing: 0.08em;
+      z-index: 2;
+    }
+    .live-badge.is-live {
+      background: var(--red);
+      color: #fff;
+      animation: pulse-glow 2.2s ease-in-out infinite;
+    }
+    .live-badge.is-offline {
+      background: #181818;
+      color: #3a3a3a;
+      border: 1px solid #222;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 4px rgba(230,0,0,0.5); }
+      50%       { box-shadow: 0 0 20px rgba(230,0,0,0.95), 0 0 36px rgba(230,0,0,0.35); }
+    }
+
+    /* Thumbnail placeholder (no image) */
+    .thumb-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .thumb-placeholder-name {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: #2a2a2a;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* ─── Channels section ────────────────────────────────── */
+    .channels-section {
+      padding: 4px 18px 18px;
+    }
+
+    .channels-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 0 10px;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: #303030;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      user-select: none;
+    }
+    .channels-label .ch-count {
+      color: #252525;
+    }
+    .channels-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .channels-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .ch-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #141414;
+      border: 1px solid #252525;
+      border-radius: 6px;
+      padding: 7px 13px;
+      font-size: 0.78rem;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #888;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: border-color 0.14s, color 0.14s, box-shadow 0.14s, background 0.14s;
+      line-height: 1;
+    }
+    .ch-btn:hover {
+      border-color: var(--red);
+      color: #fff;
+      background: #1c1c1c;
+      box-shadow: 0 0 10px rgba(230,0,0,0.22);
+    }
+    .ch-icon {
+      font-size: 0.55rem;
+      color: var(--red);
+      opacity: 0.65;
+      flex-shrink: 0;
+      transition: opacity 0.14s;
+    }
+    .ch-btn:hover .ch-icon { opacity: 1; }
+
+    /* ─── States ──────────────────────────────────────────── */
+    .state-wrap {
       text-align: center;
-      padding: 70px 16px;
-      font-size: 0.88rem;
+      padding: 90px 16px;
     }
-    #state-loading { color: #666; }
-    #state-error   { color: #ff6b6b; }
-    #state-empty   { color: #555; }
-
-    .spinner {
-      width: 30px; height: 30px;
-      border: 3px solid #2a2a2a;
-      border-top-color: #cc0000;
+    .state-wrap .spinner {
+      width: 30px;
+      height: 30px;
+      border: 2px solid var(--border);
+      border-top-color: var(--red);
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin: 0 auto 14px;
+      animation: spin 0.75s linear infinite;
+      margin: 0 auto 18px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .state-wrap p {
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      letter-spacing: 0.06em;
+    }
+    #state-loading p { color: #333; }
+    #state-error   p { color: var(--red); }
+    #state-empty   p { color: #2e2e2e; }
 
-    .footer {
+    /* ─── Footer ──────────────────────────────────────────── */
+    footer {
       text-align: center;
-      margin-top: 36px;
-      font-size: 0.72rem;
-      color: #444;
+      padding: 0 16px 48px;
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      color: #222;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
   </style>
 </head>
 <body>
 
-  <h1>YouTube Playlist Sync</h1>
-  <p class="subtitle">Live stream playlists · auto-synced daily</p>
+  <!-- top accent stripe -->
+  <div class="accent-stripe"></div>
 
-  <div id="state-loading">
-    <div class="spinner"></div>
-    Loading...
-  </div>
-  <div id="state-error"  style="display:none"></div>
-  <div id="state-empty"  style="display:none">No sync data yet. The playlist will populate after the first cron run.</div>
+  <!-- sticky header -->
+  <header class="site-header">
+    <div class="on-air">
+      <span class="blink-dot"></span>
+      On Air
+    </div>
+    <span class="site-title">YouTube Playlist Sync</span>
+    <div class="header-meta">
+      <span class="sync-label">SYNC 14:00 UTC</span>
+      <span class="last-sync" id="header-sync"></span>
+    </div>
+  </header>
 
-  <div class="grid" id="grid" style="display:none"></div>
+  <!-- main content -->
+  <main>
+    <div id="state-loading" class="state-wrap">
+      <div class="spinner"></div>
+      <p>Initializing feed...</p>
+    </div>
+    <div id="state-error" class="state-wrap" style="display:none">
+      <p id="error-msg">Signal lost.</p>
+    </div>
+    <div id="state-empty" class="state-wrap" style="display:none">
+      <p>No broadcast data yet — first sync pending.</p>
+    </div>
 
-  <p class="footer" id="footer"></p>
+    <div id="feed" style="display:none"></div>
+  </main>
+
+  <footer id="footer"></footer>
 
   <script>
+    /* ── Helpers ─────────────────────────────────────────── */
     function el(tag, attrs) {
       var children = Array.prototype.slice.call(arguments, 2);
       var node = document.createElement(tag);
@@ -217,97 +436,151 @@
     }
 
     function fmtDate(iso) {
-      if (!iso) return 'Never';
+      if (!iso) return 'NEVER';
       try {
-        return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-      } catch(e) { return iso; }
+        return new Date(iso)
+          .toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+          .toUpperCase();
+      } catch(e) { return String(iso).toUpperCase(); }
     }
 
-    function buildCard(p) {
-      // Thumbnail
-      var thumbWrap = el('div', { className: 'thumbnail-wrap' });
+    function svgYtIcon() {
+      var ns = 'http://www.w3.org/2000/svg';
+      var svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('width', '52'); svg.setAttribute('height', '37');
+      svg.setAttribute('viewBox', '0 0 52 37'); svg.setAttribute('fill', 'none');
+      var bg = document.createElementNS(ns, 'rect');
+      bg.setAttribute('width', '52'); bg.setAttribute('height', '37');
+      bg.setAttribute('rx', '8'); bg.setAttribute('fill', '#1a1a1a');
+      var play = document.createElementNS(ns, 'polygon');
+      play.setAttribute('points', '20,12 38,18.5 20,25');
+      play.setAttribute('fill', '#e60000');
+      svg.appendChild(bg); svg.appendChild(play);
+      return svg;
+    }
+
+    /* ── Build card ──────────────────────────────────────── */
+    function buildCard(p, index) {
+      var isLive = p.liveStreamsFound > 0;
+
+      /* — Thumbnail link — */
+      var thumbLink = el('a', {
+        className: 'thumb-link',
+        href: p.youtubeUrl,
+        target: '_blank',
+        rel: 'noopener noreferrer'
+      });
+
       if (p.thumbnailUrl) {
-        thumbWrap.appendChild(el('img', { src: p.thumbnailUrl, alt: p.name }));
+        thumbLink.appendChild(el('img', {
+          className: 'thumb-img',
+          src: p.thumbnailUrl,
+          alt: p.name,
+          loading: 'lazy'
+        }));
       } else {
-        thumbWrap.appendChild(el('div', { className: 'thumb-placeholder' }, 'No thumbnail'));
+        var ph = el('div', { className: 'thumb-placeholder' });
+        ph.appendChild(svgYtIcon());
+        ph.appendChild(el('span', { className: 'thumb-placeholder-name' }, p.name));
+        thumbLink.appendChild(ph);
       }
 
-      // Badge
-      var badge = el('span', { className: 'badge' },
-        p.liveStreamsFound + ' live stream' + (p.liveStreamsFound !== 1 ? 's' : '')
-      );
+      /* — Bottom overlay with title + CTA — */
+      var overlay = el('div', { className: 'thumb-overlay' });
+      overlay.appendChild(el('span', { className: 'thumb-title' }, p.name));
+      var ctaLink = el('a', {
+        className: 'thumb-cta',
+        href: p.youtubeUrl,
+        target: '_blank',
+        rel: 'noopener noreferrer'
+      }, '▶ Open Playlist');
+      overlay.appendChild(ctaLink);
+      thumbLink.appendChild(overlay);
 
-      // Channel list (collapsible)
-      var channelList = el('div', { className: 'channel-list hidden' });
+      /* — Labels — */
+      thumbLink.appendChild(el('span', { className: 'thumb-type-label' }, 'Playlist'));
+      thumbLink.appendChild(el('span', {
+        className: 'live-badge ' + (isLive ? 'is-live' : 'is-offline')
+      }, '● ' + p.liveStreamsFound + ' Live'));
+
+      /* — Channels section — */
+      var chSection = el('div', { className: 'channels-section' });
+      var chLabel = el('div', { className: 'channels-label' });
+      chLabel.appendChild(document.createTextNode('Channels'));
+      chLabel.appendChild(el('span', { className: 'ch-count' },
+        (p.channels || []).length + ''
+      ));
+      chSection.appendChild(chLabel);
+
+      var grid = el('div', { className: 'channels-grid' });
       (p.channels || []).forEach(function(ch) {
-        var item = el('div', { className: 'channel-item' }, ch.name || ch.id);
-        if (ch.name) item.appendChild(el('span', { className: 'channel-id' }, ch.id));
-        channelList.appendChild(item);
+        var url = 'https://www.youtube.com/channel/' + ch.id + '/live';
+        var btn = el('a', {
+          className: 'ch-btn',
+          href: url,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          title: 'Watch ' + (ch.name || ch.id) + ' live'
+        });
+        var icon = el('span', { className: 'ch-icon' }, '▶');
+        btn.appendChild(icon);
+        btn.appendChild(document.createTextNode(ch.name || ch.id));
+        grid.appendChild(btn);
       });
+      chSection.appendChild(grid);
 
-      var toggleBtn = el('button', {
-        className: 'toggle-btn',
-        onclick: function() {
-          var hidden = channelList.classList.contains('hidden');
-          channelList.classList.toggle('hidden', !hidden);
-          this.textContent = (hidden ? 'Hide' : 'Show') + ' channels (' + (p.channels || []).length + ')';
-        }
-      }, 'Show channels (' + (p.channels || []).length + ')');
+      /* — Assemble card — */
+      var card = el('div', {
+        className: 'card',
+        style: 'animation-delay:' + (index * 0.12) + 's'
+      }, thumbLink, chSection);
 
-      var body = el('div', { className: 'card-body' },
-        el('div', { className: 'card-header' },
-          el('span', { className: 'card-title' }, p.name),
-          badge
-        ),
-        el('a', { className: 'yt-link', href: p.youtubeUrl, target: '_blank', rel: 'noopener noreferrer' },
-          'Open on YouTube'
-        ),
-        el('div', { className: 'meta' },
-          'Last sync: ' + fmtDate(p.lastSyncAt),
-          el('br', null),
-          'Sync schedule: ' + (p.syncSchedule || 'Daily at 14:00 UTC'),
-          el('br', null),
-          'Channels monitored: ' + (p.channels || []).length
-        ),
-        toggleBtn,
-        channelList
-      );
-
-      return el('div', { className: 'card' }, thumbWrap, body);
+      return card;
     }
 
+    /* ── State switcher ──────────────────────────────────── */
     function show(id) {
-      ['state-loading','state-error','state-empty','grid'].forEach(function(s) {
-        document.getElementById(s).style.display = s === id ? (id === 'grid' ? 'grid' : 'block') : 'none';
+      ['state-loading', 'state-error', 'state-empty', 'feed'].forEach(function(s) {
+        var node = document.getElementById(s);
+        if (s === id) {
+          node.style.display = (s === 'feed') ? 'flex' : 'block';
+        } else {
+          node.style.display = 'none';
+        }
       });
     }
 
+    /* ── Fetch and render ────────────────────────────────── */
     fetch('/api/status')
       .then(function(r) {
         if (!r.ok) return r.json().then(function(b) { throw new Error(b.error || 'HTTP ' + r.status); });
         return r.json();
       })
       .then(function(data) {
+        /* Update header meta */
+        var headerSync = document.getElementById('header-sync');
+        if (data.lastSyncAt) {
+          headerSync.textContent = 'Last: ' + fmtDate(data.lastSyncAt);
+        }
+
         if (!data.playlists || data.playlists.length === 0) {
           show('state-empty');
           return;
         }
 
-        var grid = document.getElementById('grid');
-        data.playlists.forEach(function(p) {
-          // Inject lastSyncAt into each playlist for the card
-          p.lastSyncAt = data.lastSyncAt;
-          grid.appendChild(buildCard(p));
+        var feed = document.getElementById('feed');
+        data.playlists.forEach(function(p, i) {
+          feed.appendChild(buildCard(p, i));
         });
 
-        show('grid');
+        show('feed');
         document.getElementById('footer').textContent =
-          'Data fetched at ' + fmtDate(data.generatedAt);
+          'Data fetched  ' + fmtDate(data.generatedAt);
       })
       .catch(function(err) {
         show('state-error');
-        document.getElementById('state-error').textContent =
-          'Failed to load: ' + (err.message || 'Unknown error');
+        document.getElementById('error-msg').textContent =
+          'Signal lost — ' + (err.message || 'Unknown error').toUpperCase();
       });
   </script>
 
