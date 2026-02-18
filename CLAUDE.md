@@ -32,9 +32,10 @@ vercel --prod
 ### Core Flow
 1. **Entry Point**: `api/cron.ts` - Vercel serverless function triggered by cron
 2. **Orchestrator**: `SyncService` - Manages sync process for all playlists
-3. **YouTube API**: `YouTubeService` - Wraps all YouTube Data API v3 operations
+3. **YouTube API**: `YouTubeService` - Wraps all YouTube Data API v3 operations; detection can use scraping or API (see Live Stream Detection Modes)
 4. **Auth**: `OAuthClient` - Handles OAuth token refresh with automatic expiry management
 5. **API Client**: `APIClient` - HTTP client with exponential backoff retry logic
+6. **Snapshot**: After each sync, `api/cron.ts` writes a `SyncSnapshot` to Vercel KV (`sync_snapshot` key) for the status page
 
 ### Authentication
 - Uses **OAuth 2.0** (not API key) for YouTube API access
@@ -84,6 +85,7 @@ For each playlist:
 - `YOUTUBE_OAUTH_CLIENT_SECRET` - OAuth client secret
 - `YOUTUBE_OAUTH_REFRESH_TOKEN` - Long-lived refresh token (obtained via `npm run setup-oauth`)
 - `ENABLE_REPORT` - Optional, set to "true" to enable CLI-style report output in logs
+- `USE_SCRAPING` - Optional, set to "true" to use the zero-quota `/live` URL scraping method for live detection instead of the YouTube search API (see Live Stream Detection Modes)
 
 ## Key Implementation Details
 
@@ -105,11 +107,13 @@ For each playlist:
 - Individual failures don't stop the batch (logged and skipped)
 
 ### YouTube API Quota Costs
-- Search for live streams: 100 units per channel
+- Search for live streams: 100 units per channel (**0 units when `USE_SCRAPING=true`**)
 - Get playlist items: 1 unit per request (paginated at 50 items)
 - Add video to playlist: 50 units
 - Remove video from playlist: 50 units
 - Default daily quota: 10,000 units
+
+With scraping enabled and 10 channels, a typical sync (nothing changed) costs ~1 unit instead of ~1,001.
 
 ### Vercel Cron Configuration (`vercel.json`)
 - Free tier: Daily cron only (`0 0 * * *`)
@@ -125,6 +129,8 @@ All types are defined in `src/types/index.ts`:
 - `PlaylistVideo` - Video in playlist (playlistItemId + videoId)
 - `SyncResult` - Result of syncing one playlist (counts, errors, added/removed videos)
 - `ChannelConfig` - Union type: string ID or object with id + optional name
+- `SyncSnapshot` - Full KV snapshot: `{ lastSyncAt: string, playlists: PlaylistSnapshot[] }`
+- `PlaylistSnapshot` - Per-playlist KV data: name, playlistId, youtubeUrl, thumbnailUrl, liveStreamsFound, channels
 - YouTube API response types (`YouTubeSearchResponse`, `YouTubePlaylistItemsResponse`)
 
 ## Project Structure
@@ -151,6 +157,54 @@ src/
 scripts/
   setup-oauth.ts               # OAuth credential setup wizard
 ```
+
+## Live Stream Detection Modes
+
+`YouTubeService.getChannelLiveStreams` supports two detection strategies, controlled by `USE_SCRAPING`:
+
+### API Mode (default, `USE_SCRAPING` unset)
+- Calls `GET /search` with `eventType=live` — **100 quota units per channel**
+- Returns full metadata: videoId, title, channelId, publishedAt
+- Reliable and official
+
+### Scraping Mode (`USE_SCRAPING=true`)
+- Fetches `https://www.youtube.com/channel/{channelId}/live` with browser-like headers
+- Follows HTTP redirects; if the final URL matches `youtube.com/watch?v=VIDEO_ID` the channel is live
+- **0 quota units for detection**
+- Trade-offs:
+  - `title` is always `"Live Stream"` (placeholder)
+  - `startedAt` is the detection timestamp, not the actual stream start
+  - At most one stream detected per channel (the primary active one)
+  - Fragile if YouTube changes redirect behavior
+
+Implementation: `src/services/youtube.service.ts` — `scrapeChannelLiveStream` (lines 24-59), routing in `getChannelLiveStreams` (lines 61-64).
+
+## Snapshot & Status
+
+After every sync, `api/cron.ts` writes a snapshot to **Vercel KV** so the status page can display last-run info without any YouTube API calls.
+
+### What gets saved (`kv.set('sync_snapshot', snapshot)`)
+```typescript
+SyncSnapshot = {
+  lastSyncAt: string,          // ISO timestamp of the sync
+  playlists: [{
+    name: string,
+    playlistId: string,
+    youtubeUrl: string,        // https://www.youtube.com/playlist?list=PL...
+    thumbnailUrl: string|null, // from getPlaylistsMetadata (playlists.list API)
+    liveStreamsFound: number,
+    channels: Channel[],
+  }]
+}
+```
+
+### How it works
+1. After `syncAllPlaylists` completes, a second `YouTubeService` call fetches playlist thumbnails (`playlists.list` — 1 quota unit)
+2. The snapshot is built and written to KV key `sync_snapshot`
+3. KV write failure is **non-fatal** — logged and skipped so the cron still returns 200
+4. The status/portal page reads `sync_snapshot` from KV on demand to render the dashboard
+
+Relevant code: `api/cron.ts:50-75`.
 
 ## Common Patterns
 

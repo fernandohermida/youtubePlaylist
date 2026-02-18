@@ -1,40 +1,51 @@
 # Auto-Updated YouTube Live Playlist
 
-Automatically sync YouTube playlists with currently live streams from configured channels. Runs on Vercel with cron jobs.
+Automatically keeps YouTube playlists updated with currently live streams from configured channels. Runs on Vercel with cron jobs.
 
-## Overview
+## How It Works
 
-This service keeps YouTube playlists automatically updated with live streams from a predefined set of channels. Perfect for aggregating live news streams, gaming broadcasts, or any other type of live content.
+```
+Cron trigger (api/cron.ts)
+  → Detect live streams per channel   (scraping or YouTube Search API)
+  → Fetch current playlist contents   (YouTube playlistItems API)
+  → Diff: what to add / what to remove
+  → Batch add/remove with 200ms delays
+  → Write SyncSnapshot to Vercel KV   (for the status page)
+```
 
-**Example Use Case:** Create an "Argentinian News Live" playlist that automatically contains only the news channels that are currently streaming.
+Only videos that actually need to change are touched — if the playlist already matches the current live state, no add/remove API calls are made.
+
+**Example use case:** An "Argentinian News Live" playlist that always contains only the channels currently streaming live.
 
 ## Features
 
 - Multiple playlists supported
-- Config-driven (no UI needed)
-- Automatic live stream detection
-- Automatic playlist sync (adds new live streams, removes ended ones)
+- Config-driven — no UI needed
+- Two detection modes: YouTube Search API or zero-quota URL scraping
+- Smart diff — only adds/removes what changed
+- Status snapshot saved to Vercel KV after every sync
 - Runs on schedule via Vercel cron
-- Stateless execution
-- Comprehensive error handling and logging
+- Comprehensive error handling with per-channel isolation
 
 ## Prerequisites
 
-1. **Node.js** (v18 or higher)
-2. **YouTube Data API v3 Key** ([Get one here](https://console.cloud.google.com/apis/credentials))
-3. **Vercel Account** ([Sign up here](https://vercel.com))
+- Node.js 18+
+- A [Vercel](https://vercel.com) project with **Vercel KV** storage enabled
+- A Google Cloud project with the **YouTube Data API v3** enabled
+- OAuth 2.0 credentials (Client ID + Client Secret) from Google Cloud Console
+
+> The service uses OAuth 2.0 (not a simple API key) because playlist modification requires write access to your YouTube account.
 
 ## Setup
 
-### 1. Get YouTube API Key
+### 1. Google Cloud OAuth credentials
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project (or select existing)
-3. Enable "YouTube Data API v3"
-4. Create credentials → API Key
-5. Restrict the key to YouTube Data API v3 only (recommended)
+2. Create or select a project → enable **YouTube Data API v3**
+3. Create credentials → **OAuth 2.0 Client ID** (Desktop app type)
+4. Download the client ID and client secret
 
-### 2. Clone and Install
+### 2. Clone and install
 
 ```bash
 git clone <your-repo-url>
@@ -42,15 +53,15 @@ cd youtubePlaylist
 npm install
 ```
 
-### 3. Configure Environment Variables
-
-Create a `.env` file:
+### 3. Run the OAuth setup wizard
 
 ```bash
-YOUTUBE_API_KEY=your_api_key_here
+npm run setup-oauth
 ```
 
-### 4. Configure Playlists
+This interactive script guides you through authorizing the app and saves the refresh token to `.env.local`.
+
+### 4. Configure playlists
 
 Edit `src/config/playlists.json`:
 
@@ -58,176 +69,166 @@ Edit `src/config/playlists.json`:
 {
   "playlists": [
     {
-      "name": "Argentinian News Live",
-      "playlistId": "PLxxxxxxxxxxxxxxxxxxx",
+      "name": "News Live",
+      "playlistId": "PLxxx...",
       "channels": [
-        "UCxxxxxxxxxxxxxxxxxxxxxx",
-        "UCyyyyyyyyyyyyyyyyyyyyyy"
+        "UCaaa...",
+        { "id": "UCbbb...", "name": "Channel Display Name" }
       ]
     }
   ]
 }
 ```
 
-**Finding IDs:**
-- **Playlist ID:** Open playlist on YouTube → URL contains `list=PLxxx...`
-- **Channel ID:** Open channel → View page source → Search for `channelId` or use browser extension
+- Playlist IDs must start with `PL` (from `youtube.com/playlist?list=PLxxx...`)
+- Channel IDs must start with `UC` (not the @handle — find via page source or a browser extension)
+- Channels accept a bare ID string or an object with `id` + optional `name`
 
-**Validation:**
-- Playlist IDs must start with `PL`
-- Channel IDs must start with `UC`
-- At least one channel required per playlist
-
-### 5. Local Testing
+### 5. Local testing
 
 ```bash
 npm run build
 npm run dev
-```
-
-Then trigger the endpoint:
-
-```bash
+# In another terminal:
 curl http://localhost:3000/api/cron
 ```
 
-### 6. Deploy to Vercel
+### 6. Deploy
 
 ```bash
-npm install -g vercel
-vercel login
 vercel --prod
 ```
 
-Add environment variable in Vercel dashboard:
-1. Go to your project → Settings → Environment Variables
-2. Add `YOUTUBE_API_KEY` with your API key
-3. Redeploy if needed
+Add all required environment variables in Vercel project settings before deploying.
 
-## How It Works
+## Environment Variables
 
-### Architecture
+| Variable | Required | Description |
+|---|---|---|
+| `YOUTUBE_OAUTH_CLIENT_ID` | Yes | OAuth client ID from Google Cloud Console |
+| `YOUTUBE_OAUTH_CLIENT_SECRET` | Yes | OAuth client secret |
+| `YOUTUBE_OAUTH_REFRESH_TOKEN` | Yes | Long-lived refresh token (from `npm run setup-oauth`) |
+| `KV_REST_API_URL` | Yes | Vercel KV URL (auto-set when KV store is linked) |
+| `KV_REST_API_TOKEN` | Yes | Vercel KV token (auto-set when KV store is linked) |
+| `USE_SCRAPING` | No | Set to `"true"` to use zero-quota scraping for detection |
+| `ENABLE_REPORT` | No | Set to `"true"` to print a CLI-style report to logs |
 
-```
-Config Load → Discover Live Streams → Get Current Playlist → Diff → Sync (Add/Remove) → Log Results
-```
+## Live Stream Detection
 
-### Sync Algorithm
+Two modes are available via `USE_SCRAPING`.
 
-For each configured playlist:
+### Default — YouTube Search API
 
-1. **Discovery:** Query YouTube API to find live streams from configured channels
-2. **Current State:** Get all videos currently in the playlist
-3. **Diff Calculation:**
-   - `toAdd` = live streams not in playlist
-   - `toRemove` = playlist videos no longer live
-4. **Sync:** Add new videos, remove ended ones
-5. **Report:** Log summary with counts and errors
+Calls `GET /search?eventType=live` per channel. Returns full metadata. Costs **100 quota units per channel per sync**.
 
-### Cron Schedule
+### Scraping Mode (`USE_SCRAPING=true`)
 
-Configured in `vercel.json`:
+Fetches `https://www.youtube.com/channel/{channelId}/live` and follows redirects:
+
+- Channel **is live** → redirects to `youtube.com/watch?v=VIDEO_ID` → videoId extracted
+- Channel **is not live** → redirects to channel page → no stream
+
+Costs **0 quota units** for detection.
+
+Trade-offs with scraping:
+- `title` stored as `"Live Stream"` (placeholder — actual title not fetched)
+- `startedAt` is the detection time, not the actual stream start
+- At most one stream per channel (primary active stream only)
+- Depends on YouTube redirect behavior, which could change
+
+## API Quota Costs
+
+| Operation | Mode | Cost |
+|---|---|---|
+| Detect live streams | API (default) | 100 units / channel |
+| Detect live streams | Scraping | 0 units / channel |
+| Read playlist contents | Always | 1 unit / 50 items |
+| Add video to playlist | Always | 50 units |
+| Remove video from playlist | Always | 50 units |
+| Fetch playlist thumbnails (snapshot) | Always | 1 unit |
+
+**Example — 10 channels, nothing changed:**
+
+| Mode | Quota used |
+|---|---|
+| API | ~1,001 units |
+| Scraping | ~1 unit |
+
+Default daily quota: 10,000 units. [Request an increase](https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas) if needed.
+
+## Status Snapshot (Vercel KV)
+
+After each sync, the cron handler writes a `SyncSnapshot` to Vercel KV under the key `sync_snapshot`. The status/portal page reads this key to display last-run info without any YouTube API calls.
+
+**What gets saved:**
 
 ```json
 {
-  "crons": [{
-    "path": "/api/cron",
-    "schedule": "0 0 * * *"  // Daily at midnight (00:00)
-  }]
+  "lastSyncAt": "2025-01-01T00:00:00.000Z",
+  "playlists": [
+    {
+      "name": "News Live",
+      "playlistId": "PLxxx...",
+      "youtubeUrl": "https://www.youtube.com/playlist?list=PLxxx...",
+      "thumbnailUrl": "https://i.ytimg.com/...",
+      "liveStreamsFound": 2,
+      "channels": [{ "id": "UCaaa..." }, { "id": "UCbbb...", "name": "Channel Display Name" }]
+    }
+  ]
 }
 ```
 
-**Cron Format:** `minute hour day month weekday`
-- `0 0 * * *` = Daily at midnight (current - Vercel free tier)
-- `0 */6 * * *` = Every 6 hours (requires Pro plan)
-- `0 * * * *` = Every hour (requires Pro plan)
-- `*/15 * * * *` = Every 15 minutes (requires Pro plan)
+A KV write failure is non-fatal — the cron job still returns 200 and logs the error.
 
-**Note:** Vercel Hobby (free) accounts are limited to daily cron jobs. Upgrade to Pro for higher frequencies.
+## Vercel Cron
 
-## API Quota Management
+Configured in `vercel.json`:
 
-### YouTube API Quota Costs
+- **Free tier**: Daily (`0 0 * * *`)
+- **Pro tier**: Can run hourly, every 15 minutes, etc.
+- **Endpoint**: `GET /api/cron`
 
-| Operation | Cost (units) | Frequency |
-|-----------|--------------|-----------|
-| Search for live streams | 100 | Per channel, per run |
-| Get playlist items | 1 | Per playlist, per run |
-| Add video to playlist | 50 | Per new live stream |
-| Remove video from playlist | 50 | Per ended stream |
+## Commands
 
-### Daily Quota Calculation
-
-**Default quota:** 10,000 units/day
-
-**Example (daily cron - Vercel free tier, 2 playlists, 15 channels total):**
-- 1 run/day
-- 15 search calls/run = 1,500 units
-- ~4 insert/delete = ~200 units
-- **Total per run: ~1,700 units**
-- **Daily total: ~1,700 units/day**
-
-This is well within the default quota! For higher frequencies (requires Vercel Pro plan):
-
-
-**To request YouTube API quota increase:**
-- Go to [Google Cloud Console](https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas)
-- Request increase (takes 1-2 weeks)
-
-**To upgrade Vercel plan for more frequent crons:**
-- Go to [Vercel Dashboard](https://vercel.com/dashboard) → Settings → Billing
-- Upgrade to Pro plan ($20/month)
-
-### Monitor Quota Usage
-
-View usage: [Google Cloud Console → APIs & Services → YouTube Data API v3 → Quotas](https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas)
+| Command | Description |
+|---|---|
+| `npm run build` | Compile TypeScript to `dist/` |
+| `npm run type-check` | Type-check without emitting |
+| `npm run dev` | Start Vercel dev server |
+| `npm run setup-oauth` | Re-run OAuth credential setup |
 
 ## Project Structure
 
 ```
-youtubePlaylist/
-├── api/
-│   └── cron.ts                    # Vercel cron endpoint
-├── src/
-│   ├── config/
-│   │   ├── playlists.json        # Playlist configurations
-│   │   └── schema.ts             # Config validation (Zod)
-│   ├── services/
-│   │   ├── sync.service.ts       # Main sync orchestrator
-│   │   └── youtube.service.ts    # YouTube API wrapper
-│   └── utils/
-│       ├── logger.ts             # Logging
-│       ├── api-client.ts         # HTTP client with retry
-│       └── diff.ts               # Array diff helper
-├── vercel.json                   # Vercel config (cron schedule)
-└── package.json
+api/
+  cron.ts                      # Vercel cron endpoint — sync + KV snapshot write
+src/
+  auth/
+    oauth-client.ts            # OAuth token refresh and caching
+  config/
+    playlists.json             # Playlist and channel configuration
+    schema.ts                  # Zod validation schemas
+  services/
+    sync.service.ts            # Sync orchestrator (diff + batch operations)
+    youtube.service.ts         # YouTube API wrapper + scraping detection
+  types/
+    index.ts                   # All TypeScript types
+  utils/
+    api-client.ts              # Axios HTTP client with retry/backoff
+    diff.ts                    # arrayDiff utility
+    logger.ts                  # Structured logging
+    report-formatter.ts        # CLI-style report generation
+scripts/
+  setup-oauth.ts               # OAuth credential setup wizard
 ```
 
-## Monitoring
-
-### Vercel Logs
-
-View execution logs:
-1. Vercel Dashboard → Your Project → Logs
-2. Filter by `/api/cron` function
-
-### Log Format
-
-All logs include timestamps and structured data:
-
-```
-[2024-01-15T10:00:00.000Z] [INFO] Starting sync for playlist: News Live
-[2024-01-15T10:00:01.234Z] [INFO] Found 3 live streams for playlist News Live
-[2024-01-15T10:00:02.456Z] [INFO] Sync completed: 2 added, 1 removed
-```
-
-### Response Format
+## Cron Response Format
 
 ```json
 {
   "success": true,
   "executionTimeMs": 3450,
-  "totalPlaylists": 2,
+  "totalPlaylists": 1,
   "results": [
     {
       "playlistName": "News Live",
@@ -238,9 +239,9 @@ All logs include timestamps and structured data:
     }
   ],
   "summary": {
-    "totalLiveStreamsFound": 5,
-    "totalVideosAdded": 3,
-    "totalVideosRemoved": 2,
+    "totalLiveStreamsFound": 3,
+    "totalVideosAdded": 2,
+    "totalVideosRemoved": 1,
     "totalErrors": 0
   }
 }
@@ -248,85 +249,20 @@ All logs include timestamps and structured data:
 
 ## Troubleshooting
 
-### "YOUTUBE_API_KEY not configured"
+**OAuth credentials not configured** — check that all three `YOUTUBE_OAUTH_*` variables are set. Re-run `npm run setup-oauth` if the refresh token is expired.
 
-- Verify `.env` file exists locally
-- For Vercel: Check Environment Variables in dashboard
-- Ensure variable name is exactly `YOUTUBE_API_KEY`
+**Invalid playlist ID format** — must start with `PL`. Find it in the YouTube URL: `youtube.com/playlist?list=PLxxx...`.
 
-### "Invalid YouTube playlist ID format"
+**Invalid channel ID format** — must start with `UC`. This is not the @handle. View page source or use a browser extension to find it.
 
-- Playlist IDs must start with `PL`
-- Find in YouTube URL: `youtube.com/playlist?list=PLxxx...`
+**No videos being added** — verify channels are actually live, check channel IDs, and inspect Vercel logs for errors.
 
-### "Invalid YouTube channel ID format"
+**Quota exceeded** — switch to `USE_SCRAPING=true`, reduce sync frequency, or [request a quota increase](https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas).
 
-- Channel IDs must start with `UC`
-- Not the same as username/handle
-- Use browser extension or view page source to find
-
-### No videos being added
-
-- Check if channels are actually live
-- Verify channel IDs are correct
-- Check Vercel logs for API errors
-- Verify YouTube API key has correct permissions
-
-### API Quota Exceeded
-
-- Check quota usage in Google Cloud Console
-- Reduce cron frequency in `vercel.json`
-- Request quota increase
-- Reduce number of channels
-
-### Vercel Function Timeout
-
-- Default: 10s (Hobby), 60s (Pro)
-- Reduce number of playlists/channels per execution
-- Consider splitting into multiple cron jobs
-
-## Development
-
-### Build TypeScript
-
-```bash
-npm run build
-```
-
-### Type Check
-
-```bash
-npm run type-check
-```
-
-### Manual Testing
-
-1. Start local server: `npm run dev`
-2. Trigger endpoint: `curl http://localhost:3000/api/cron`
-3. Check console logs
-4. Verify playlist on YouTube
+**Scraping not detecting live streams** — YouTube's redirect behavior may have changed. Fall back to default API mode by unsetting `USE_SCRAPING`.
 
 ## Security
 
-- **Never commit `.env`** (already in `.gitignore`)
-- **Restrict API key** to YouTube Data API v3 only
-- **Consider basic auth** for cron endpoint in production
-- **Rotate API keys** periodically
-
-## Limitations
-
-- Stateless (no database/caching)
-- Processes playlists sequentially
-- Subject to YouTube API quota limits
-- Vercel cron requires paid plan for high frequency
-
-## License
-
-MIT
-
-## Support
-
-For issues and questions, check:
-- [YouTube Data API Documentation](https://developers.google.com/youtube/v3)
-- [Vercel Cron Jobs Documentation](https://vercel.com/docs/cron-jobs)
-- Project issues on GitHub
+- Never commit `.env.local` (already in `.gitignore`)
+- The OAuth refresh token grants write access to your YouTube account — treat it as a secret
+- Rotate credentials if compromised by re-running `npm run setup-oauth`
