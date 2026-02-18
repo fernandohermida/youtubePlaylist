@@ -392,8 +392,7 @@
     </div>
     <span class="site-title">LivePulse</span>
     <div class="header-meta">
-      <span class="sync-label">SYNC 14:00 UTC</span>
-      <span class="last-sync" id="header-sync"></span>
+      <span class="sync-label" id="last-sync-label">LAST SYNC —</span>
     </div>
   </header>
 
@@ -558,10 +557,10 @@
       })
       .then(function(data) {
         /* Update header meta */
-        var headerSync = document.getElementById('header-sync');
-        if (data.lastSyncAt) {
-          headerSync.textContent = 'Last: ' + fmtDate(data.lastSyncAt);
-        }
+        var syncLabel = document.getElementById('last-sync-label');
+        syncLabel.textContent = data.lastSyncAt
+          ? 'LAST SYNC  ' + fmtDate(data.lastSyncAt)
+          : 'LAST SYNC  —';
 
         if (!data.playlists || data.playlists.length === 0) {
           show('state-empty');
