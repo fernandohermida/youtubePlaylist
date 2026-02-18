@@ -8,10 +8,17 @@
     "type-check": "tsc --noEmit",
     "setup-oauth": "ts-node scripts/setup-oauth.ts"
   },
-  "keywords": ["youtube", "playlist", "automation", "vercel", "cron"],
+  "keywords": [
+    "youtube",
+    "playlist",
+    "automation",
+    "vercel",
+    "cron"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@vercel/kv": "^3.0.0",
     "axios": "^1.6.0",
     "dotenv": "^16.3.0",
     "zod": "^3.22.0"

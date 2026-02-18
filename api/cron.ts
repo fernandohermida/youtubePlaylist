@@ -1,9 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { kv } from '@vercel/kv';
 import { SyncService } from '../src/services/sync.service';
+import { YouTubeService } from '../src/services/youtube.service';
 import { OAuthClient } from '../src/auth/oauth-client';
 import { loadConfig } from '../src/config/schema';
 import { logger } from '../src/utils/logger';
 import { ReportFormatter, isReportEnabled } from '../src/utils/report-formatter';
+import type { Channel, ChannelConfig, SyncSnapshot } from '../src/types';
+
+function normalizeChannel(ch: ChannelConfig): Channel {
+  return typeof ch === 'string' ? { id: ch } : { id: ch.id, name: ch.name };
+}
 
 export default async function handler(
   req: VercelRequest,
@@ -38,6 +45,34 @@ export default async function handler(
 
     const syncService = new SyncService(oauthClient);
     const results = await syncService.syncAllPlaylists(config);
+
+    // Save snapshot to KV so the status page can read it without YouTube API calls
+    try {
+      const youtubeService = new YouTubeService(oauthClient);
+      const ytItems = await youtubeService.getPlaylistsMetadata(
+        config.playlists.map((p) => p.playlistId)
+      );
+      const metaMap = new Map(ytItems.map((item) => [item.id, item]));
+
+      const snapshot: SyncSnapshot = {
+        lastSyncAt: new Date().toISOString(),
+        playlists: config.playlists.map((p, i) => {
+          const yt = metaMap.get(p.playlistId);
+          return {
+            name: p.name,
+            playlistId: p.playlistId,
+            youtubeUrl: `https://www.youtube.com/playlist?list=${p.playlistId}`,
+            thumbnailUrl: yt?.snippet.thumbnails.medium?.url ?? null,
+            liveStreamsFound: results[i]?.liveStreamsFound ?? 0,
+            channels: p.channels.map(normalizeChannel),
+          };
+        }),
+      };
+      await kv.set('sync_snapshot', snapshot);
+      logger.info('Saved sync snapshot to KV');
+    } catch (kvError) {
+      logger.error('Failed to save snapshot to KV (non-fatal)', kvError);
+    }
 
     const executionTime = Date.now() - startTime;
     const summary = {

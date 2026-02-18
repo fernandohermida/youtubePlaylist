@@ -6,6 +6,8 @@ import type {
   PlaylistVideo,
   YouTubeSearchResponse,
   YouTubePlaylistItemsResponse,
+  YouTubePlaylistsListResponse,
+  YouTubePlaylistListItem,
 } from '../types';
 
 export class YouTubeService {
@@ -167,6 +169,22 @@ export class YouTubeService {
           error
         );
       }
+    }
+  }
+
+  async getPlaylistsMetadata(playlistIds: string[]): Promise<YouTubePlaylistListItem[]> {
+    try {
+      logger.debug(`Fetching metadata for playlists: ${playlistIds.join(', ')}`);
+      const response = await this.apiClient.get<YouTubePlaylistsListResponse>('/playlists', {
+        part: 'snippet,contentDetails',
+        id: playlistIds.join(','),
+        maxResults: 50,
+      });
+      logger.info(`Fetched metadata for ${response.items.length} playlists`);
+      return response.items;
+    } catch (error) {
+      logger.error('Failed to fetch playlist metadata', error);
+      throw error;
     }
   }
 

@@ -74,3 +74,41 @@ export interface YouTubePlaylistItem {
     };
   };
 }
+
+// YouTube playlists.list API response
+export interface YouTubePlaylistListItem {
+  id: string;
+  snippet: {
+    thumbnails: {
+      medium?: { url: string; width: number; height: number };
+    };
+  };
+  contentDetails: {
+    itemCount: number;
+  };
+}
+
+export interface YouTubePlaylistsListResponse {
+  items: YouTubePlaylistListItem[];
+}
+
+// KV snapshot written by cron, read by status endpoint
+export interface PlaylistSnapshot {
+  name: string;
+  playlistId: string;
+  youtubeUrl: string;
+  thumbnailUrl: string | null;
+  liveStreamsFound: number;
+  channels: Channel[];
+}
+
+export interface SyncSnapshot {
+  lastSyncAt: string;
+  playlists: PlaylistSnapshot[];
+}
+
+export interface StatusResponse {
+  lastSyncAt: string | null;
+  playlists: PlaylistSnapshot[];
+  generatedAt: string;
+}
