@@ -62,7 +62,7 @@ export default async function handler(
             name: p.name,
             playlistId: p.playlistId,
             youtubeUrl: `https://www.youtube.com/playlist?list=${p.playlistId}`,
-            thumbnailUrl: yt?.snippet.thumbnails.maxres?.url ?? yt?.snippet.thumbnails.high?.url ?? null,
+            thumbnailUrl: yt?.snippet.thumbnails.maxres?.url ?? yt?.snippet.thumbnails.standard?.url ?? yt?.snippet.thumbnails.high?.url ?? null,
             liveStreamsFound: results[i]?.liveStreamsFound ?? 0,
             channels: p.channels.map(normalizeChannel),
             liveStreams: results[i]?.liveStreams ?? [],
