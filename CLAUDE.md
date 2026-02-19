@@ -32,7 +32,7 @@ vercel --prod
 ### Core Flow
 1. **Entry Point**: `api/cron.ts` - Vercel serverless function triggered by cron
 2. **Orchestrator**: `SyncService` - Manages sync process for all playlists
-3. **YouTube API**: `YouTubeService` - Wraps all YouTube Data API v3 operations; detection can use scraping or API (see Live Stream Detection Modes)
+3. **YouTube API**: `YouTubeService` - Wraps all YouTube Data API v3 operations
 4. **Auth**: `OAuthClient` - Handles OAuth token refresh with automatic expiry management
 5. **API Client**: `APIClient` - HTTP client with exponential backoff retry logic
 6. **Snapshot**: After each sync, `api/cron.ts` writes a `SyncSnapshot` to Vercel KV (`sync_snapshot` key) for the status page
@@ -85,7 +85,6 @@ For each playlist:
 - `YOUTUBE_OAUTH_CLIENT_SECRET` - OAuth client secret
 - `YOUTUBE_OAUTH_REFRESH_TOKEN` - Long-lived refresh token (obtained via `npm run setup-oauth`)
 - `ENABLE_REPORT` - Optional, set to "true" to enable CLI-style report output in logs
-- `USE_SCRAPING` - Optional, set to "true" to use the zero-quota `/live` URL scraping method for live detection instead of the YouTube search API (see Live Stream Detection Modes)
 
 ## Key Implementation Details
 
@@ -107,13 +106,11 @@ For each playlist:
 - Individual failures don't stop the batch (logged and skipped)
 
 ### YouTube API Quota Costs
-- Search for live streams: 100 units per channel (**0 units when `USE_SCRAPING=true`**)
+- Search for live streams: 100 units per channel
 - Get playlist items: 1 unit per request (paginated at 50 items)
 - Add video to playlist: 50 units
 - Remove video from playlist: 50 units
 - Default daily quota: 10,000 units
-
-With scraping enabled and 10 channels, a typical sync (nothing changed) costs ~1 unit instead of ~1,001.
 
 ### Vercel Cron Configuration (`vercel.json`)
 - Free tier: Daily cron only (`0 0 * * *`)
@@ -157,27 +154,6 @@ src/
 scripts/
   setup-oauth.ts               # OAuth credential setup wizard
 ```
-
-## Live Stream Detection Modes
-
-`YouTubeService.getChannelLiveStreams` supports two detection strategies, controlled by `USE_SCRAPING`:
-
-### API Mode (default, `USE_SCRAPING` unset)
-- Calls `GET /search` with `eventType=live` — **100 quota units per channel**
-- Returns full metadata: videoId, title, channelId, publishedAt
-- Reliable and official
-
-### Scraping Mode (`USE_SCRAPING=true`)
-- Fetches `https://www.youtube.com/channel/{channelId}/live` with browser-like headers
-- Follows HTTP redirects; if the final URL matches `youtube.com/watch?v=VIDEO_ID` the channel is live
-- **0 quota units for detection**
-- Trade-offs:
-  - `title` is always `"Live Stream"` (placeholder)
-  - `startedAt` is the detection timestamp, not the actual stream start
-  - At most one stream detected per channel (the primary active one)
-  - Fragile if YouTube changes redirect behavior
-
-Implementation: `src/services/youtube.service.ts` — `scrapeChannelLiveStream` (lines 24-59), routing in `getChannelLiveStreams` (lines 61-64).
 
 ## Snapshot & Status
 

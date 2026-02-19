@@ -21,48 +21,7 @@ export class YouTubeService {
     );
   }
 
-  private async scrapeChannelLiveStream(channelId: string, channelName?: string): Promise<LiveStream[]> {
-    const url = `https://www.youtube.com/channel/${channelId}/live`;
-    const channelLabel = channelName ? `${channelName} (${channelId})` : channelId;
-
-    try {
-      const response = await fetch(url, {
-        redirect: 'follow',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-        },
-        signal: AbortSignal.timeout(15000),
-      });
-
-      const finalUrl = response.url;
-      const match = finalUrl.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/);
-
-      if (!match) {
-        logger.debug(`No live stream found for channel ${channelLabel} via scrape`);
-        return [];
-      }
-
-      const videoId = match[1];
-      logger.info(`Found live stream ${videoId} for channel ${channelLabel} via scrape`);
-      return [{
-        videoId,
-        channelId,
-        channelName,
-        title: 'Live Stream',
-        startedAt: new Date().toISOString(),
-      }];
-    } catch (error) {
-      logger.error(`Failed to scrape live stream for channel ${channelLabel}`, error);
-      throw error;
-    }
-  }
-
   async getChannelLiveStreams(channelId: string, channelName?: string): Promise<LiveStream[]> {
-    if (process.env.USE_SCRAPING === 'true') {
-      return this.scrapeChannelLiveStream(channelId, channelName);
-    }
-
     try {
       const channelLabel = channelName ? `${channelName} (${channelId})` : channelId;
       logger.debug(`Fetching live streams for channel: ${channelLabel}`);

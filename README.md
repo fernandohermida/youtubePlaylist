@@ -6,7 +6,7 @@ Automatically keeps YouTube playlists updated with currently live streams from c
 
 ```
 Cron trigger (api/cron.ts)
-  → Detect live streams per channel   (scraping or YouTube Search API)
+  → Detect live streams per channel   (YouTube Search API)
   → Fetch current playlist contents   (YouTube playlistItems API)
   → Diff: what to add / what to remove
   → Batch add/remove with 200ms delays
@@ -21,7 +21,6 @@ Only videos that actually need to change are touched — if the playlist already
 
 - Multiple playlists supported
 - Config-driven — no UI needed
-- Two detection modes: YouTube Search API or zero-quota URL scraping
 - Smart diff — only adds/removes what changed
 - Status snapshot saved to Vercel KV after every sync
 - Runs on schedule via Vercel cron
@@ -110,49 +109,21 @@ Add all required environment variables in Vercel project settings before deployi
 | `YOUTUBE_OAUTH_REFRESH_TOKEN` | Yes | Long-lived refresh token (from `npm run setup-oauth`) |
 | `KV_REST_API_URL` | Yes | Vercel KV URL (auto-set when KV store is linked) |
 | `KV_REST_API_TOKEN` | Yes | Vercel KV token (auto-set when KV store is linked) |
-| `USE_SCRAPING` | No | Set to `"true"` to use zero-quota scraping for detection |
 | `ENABLE_REPORT` | No | Set to `"true"` to print a CLI-style report to logs |
-
-## Live Stream Detection
-
-Two modes are available via `USE_SCRAPING`.
-
-### Default — YouTube Search API
-
-Calls `GET /search?eventType=live` per channel. Returns full metadata. Costs **100 quota units per channel per sync**.
-
-### Scraping Mode (`USE_SCRAPING=true`)
-
-Fetches `https://www.youtube.com/channel/{channelId}/live` and follows redirects:
-
-- Channel **is live** → redirects to `youtube.com/watch?v=VIDEO_ID` → videoId extracted
-- Channel **is not live** → redirects to channel page → no stream
-
-Costs **0 quota units** for detection.
-
-Trade-offs with scraping:
-- `title` stored as `"Live Stream"` (placeholder — actual title not fetched)
-- `startedAt` is the detection time, not the actual stream start
-- At most one stream per channel (primary active stream only)
-- Depends on YouTube redirect behavior, which could change
 
 ## API Quota Costs
 
-| Operation | Mode | Cost |
-|---|---|---|
-| Detect live streams | API (default) | 100 units / channel |
-| Detect live streams | Scraping | 0 units / channel |
-| Read playlist contents | Always | 1 unit / 50 items |
-| Add video to playlist | Always | 50 units |
-| Remove video from playlist | Always | 50 units |
-| Fetch playlist thumbnails (snapshot) | Always | 1 unit |
+Calls `GET /search?eventType=live` per channel. Returns full metadata.
 
-**Example — 10 channels, nothing changed:**
-
-| Mode | Quota used |
+| Operation | Cost |
 |---|---|
-| API | ~1,001 units |
-| Scraping | ~1 unit |
+| Detect live streams | 100 units / channel |
+| Read playlist contents | 1 unit / 50 items |
+| Add video to playlist | 50 units |
+| Remove video from playlist | 50 units |
+| Fetch playlist thumbnails (snapshot) | 1 unit |
+
+**Example — 10 channels, nothing changed: ~1,001 units.**
 
 Default daily quota: 10,000 units. [Request an increase](https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas) if needed.
 
@@ -210,7 +181,7 @@ src/
     schema.ts                  # Zod validation schemas
   services/
     sync.service.ts            # Sync orchestrator (diff + batch operations)
-    youtube.service.ts         # YouTube API wrapper + scraping detection
+    youtube.service.ts         # YouTube API wrapper
   types/
     index.ts                   # All TypeScript types
   utils/
@@ -258,8 +229,6 @@ scripts/
 **No videos being added** — verify channels are actually live, check channel IDs, and inspect Vercel logs for errors.
 
 **Quota exceeded** — switch to `USE_SCRAPING=true`, reduce sync frequency, or [request a quota increase](https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas).
-
-**Scraping not detecting live streams** — YouTube's redirect behavior may have changed. Fall back to default API mode by unsetting `USE_SCRAPING`.
 
 ## Security
 
