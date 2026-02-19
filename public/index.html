@@ -496,15 +496,15 @@
       'linear-gradient(135deg, rgba(116,199,100,0.32), rgba(116,199,100,0.08))'
     ];
 
-    /* ── Build one channel card ───────────────────────────────── */
-    function buildChannelCard(ch, idx) {
-      var name    = ch.name || ch.id;
-      var liveUrl = 'https://www.youtube.com/channel/' + ch.id + '/live';
+    /* ── Build one live stream card ───────────────────────────── */
+    function buildChannelCard(stream, idx) {
+      var name    = stream.channelName || stream.channelId;
+      var watchUrl = 'https://www.youtube.com/watch?v=' + stream.videoId;
       var initial = name.replace(/[^a-zA-Z0-9]/g, '').charAt(0).toUpperCase() || '#';
 
       var card = el('a', {
         className: 'ch-card',
-        href:      liveUrl,
+        href:      watchUrl,
         target:    '_blank',
         rel:       'noopener noreferrer',
         title:     name
@@ -515,9 +515,11 @@
       avatar.style.background = AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length];
 
       /* Text block */
+      var title = stream.title || '';
+      var shortTitle = title.length > 48 ? title.slice(0, 47) + '\u2026' : title;
       var info = el('div', { className: 'ch-info' });
       info.appendChild(el('span', { className: 'ch-name' }, name));
-      info.appendChild(el('span', { className: 'ch-num'  }, 'CH ' + pad2(idx + 1)));
+      info.appendChild(el('span', { className: 'ch-num'  }, shortTitle));
 
       /* Play arrow */
       var play = el('span', { className: 'ch-play' }, '\u25b6');
@@ -531,8 +533,8 @@
 
     /* ── Build one playlist section ───────────────────────────── */
     function buildPlaylistPanel(p, panelIdx) {
-      var isLive   = p.liveStreamsFound > 0;
-      var channels = p.channels || [];
+      var liveStreams = p.liveStreams || [];
+      var isLive      = liveStreams.length > 0;
 
       var section = document.createElement('section');
       section.className = 'playlist-section';
@@ -565,7 +567,7 @@
 
       /* Meta row */
       var meta = el('div', { className: 'section-meta' });
-      meta.appendChild(el('span', null, channels.length + ' channel' + (channels.length !== 1 ? 's' : '')));
+      meta.appendChild(el('span', null, liveStreams.length + ' live stream' + (liveStreams.length !== 1 ? 's' : '')));
       meta.appendChild(el('a', {
         className: 'open-playlist',
         href:      p.youtubeUrl,
@@ -574,10 +576,16 @@
       }, 'Open playlist \u2192'));
       section.appendChild(meta);
 
-      /* Channel grid */
-      var grid = el('div', { className: 'ch-grid' });
-      channels.forEach(function(ch, i) { grid.appendChild(buildChannelCard(ch, i)); });
-      section.appendChild(grid);
+      /* Live stream grid */
+      if (liveStreams.length === 0) {
+        var noLive = el('div', { className: 'section-meta' });
+        noLive.appendChild(el('span', null, 'No channels currently live'));
+        section.appendChild(noLive);
+      } else {
+        var grid = el('div', { className: 'ch-grid' });
+        liveStreams.forEach(function(stream, i) { grid.appendChild(buildChannelCard(stream, i)); });
+        section.appendChild(grid);
+      }
 
       return section;
     }

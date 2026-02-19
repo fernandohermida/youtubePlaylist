@@ -46,10 +46,12 @@ export class SyncService {
       errors: [],
       addedVideos: [],
       removedVideos: [],
+      liveStreams: [],
     };
 
     const liveStreams = await this.discoverLiveStreams(config.channels);
     result.liveStreamsFound = liveStreams.length;
+    result.liveStreams = liveStreams;
 
     logger.info(`Found ${liveStreams.length} live streams for ${config.name}`);
 

@@ -43,6 +43,7 @@ export interface SyncResult {
   errors: string[];
   addedVideos?: VideoChangeDetail[];
   removedVideos?: VideoChangeDetail[];
+  liveStreams?: LiveStream[];
 }
 
 export interface YouTubeSearchResponse {
@@ -103,6 +104,7 @@ export interface PlaylistSnapshot {
   thumbnailUrl: string | null;
   liveStreamsFound: number;
   channels: Channel[];
+  liveStreams?: LiveStream[];
 }
 
 export interface SyncSnapshot {

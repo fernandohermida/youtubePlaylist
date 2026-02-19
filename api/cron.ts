@@ -65,6 +65,7 @@ export default async function handler(
             thumbnailUrl: yt?.snippet.thumbnails.maxres?.url ?? yt?.snippet.thumbnails.high?.url ?? null,
             liveStreamsFound: results[i]?.liveStreamsFound ?? 0,
             channels: p.channels.map(normalizeChannel),
+            liveStreams: results[i]?.liveStreams ?? [],
           };
         }),
       };
