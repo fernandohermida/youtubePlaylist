@@ -3,587 +3,450 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LIVEPULSE-3000 ◈ Channel Monitor</title>
+  <title>LivePulse — Channel Monitor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    /* ═══ RESET ═══════════════════════════════════════════════════ */
+    /* ── Reset ───────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ═══ VARIABLES ═══════════════════════════════════════════════ */
+    /* ── Variables ───────────────────────────────────────────── */
     :root {
-      --bg:           #080808;
-      --surface:      #0e0e0c;
-      --bezel:        #1a1812;
-      --bezel-hi:     #28241a;
-      --bezel-edge:   #322e22;
-      --screen:       #060c04;
-      --amber:        #ffb300;
-      --amber-dim:    #a07200;
-      --amber-glow:   rgba(255,179,0,0.35);
-      --green:        #39ff14;
-      --green-dim:    #1a8a00;
-      --phosphor:     #c8c8a0;
-      --phosphor-dim: #6a6a50;
-      --phosphor-faint: #2e2e20;
-      --mono:  'Share Tech Mono', 'Courier New', monospace;
-      --brand: 'Orbitron', 'Share Tech Mono', monospace;
+      --bg:          #0a0a0a;
+      --surface:     #0d0d0d;
+      --glass:       rgba(255,255,255,0.04);
+      --glass-hover: rgba(255,255,255,0.08);
+      --border:      rgba(255,255,255,0.08);
+      --border-hover:rgba(79,156,249,0.35);
+      --accent:      #4f9cf9;
+      --accent-dim:  rgba(79,156,249,0.18);
+      --text-hi:     rgba(255,255,255,0.92);
+      --text-mid:    rgba(255,255,255,0.5);
+      --text-lo:     rgba(255,255,255,0.28);
+      --sans:        'DM Sans', system-ui, sans-serif;
+      --display:     'Raleway', system-ui, sans-serif;
     }
 
-    /* ═══ BODY ════════════════════════════════════════════════════ */
+    /* ── Base ────────────────────────────────────────────────── */
     html { scroll-behavior: smooth; }
     body {
-      font-family: var(--mono);
+      font-family: var(--sans);
       background: var(--bg);
-      color: var(--phosphor);
+      color: var(--text-hi);
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* Global heavy scanlines */
+    /* Very subtle grain overlay for depth */
     body::after {
       content: '';
       position: fixed;
       inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.06) 2px,
-        rgba(0,0,0,0.06) 4px
-      );
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.03'/%3E%3C/svg%3E");
       pointer-events: none;
       z-index: 9000;
+      opacity: 0.6;
     }
 
-    /* Global CRT vignette */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.65) 100%);
-      pointer-events: none;
-      z-index: 9001;
-    }
-
-    /* ═══ HEADER ══════════════════════════════════════════════════ */
-    .tv-header {
-      background: linear-gradient(180deg, #141210 0%, #0e0e0c 100%);
-      border-bottom: 2px solid var(--bezel-edge);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.8), 0 1px 0 rgba(255,179,0,0.06);
+    /* ── Header ──────────────────────────────────────────────── */
+    .site-header {
       position: sticky;
       top: 0;
-      z-index: 100;
-    }
-
-    /* Amber accent stripe */
-    .header-stripe {
-      height: 2px;
-      background: linear-gradient(90deg,
-        transparent 0%,
-        var(--amber-dim) 15%,
-        var(--amber) 40%,
-        var(--green) 60%,
-        var(--amber) 75%,
-        var(--amber-dim) 90%,
-        transparent 100%
-      );
-      opacity: 0.7;
+      z-index: 200;
+      height: 56px;
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
 
     .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 100%;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding: 10px 24px 12px;
     }
 
-    /* Brand / Logo */
-    .tv-brand {
+    /* Brand */
+    .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
+      gap: 10px;
+      text-decoration: none;
     }
 
-    .brand-text { line-height: 1; }
+    .brand-icon {
+      flex-shrink: 0;
+      position: relative;
+      width: 26px;
+      height: 26px;
+    }
 
     .brand-name {
-      font-family: var(--brand);
-      font-size: 0.95rem;
-      font-weight: 900;
-      color: var(--amber);
-      letter-spacing: 0.06em;
-      text-shadow: 0 0 16px var(--amber-glow), 0 0 40px rgba(255,179,0,0.15);
-      white-space: nowrap;
+      font-family: var(--display);
+      font-weight: 300;
+      font-size: 1.1rem;
+      color: var(--text-hi);
+      letter-spacing: 0.01em;
     }
 
-    .brand-sub {
-      display: block;
-      font-size: 0.48rem;
-      color: var(--phosphor-faint);
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
-
-    /* On Air indicator */
-    .on-air {
+    /* Sync info */
+    .sync-info {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.6rem;
-      letter-spacing: 0.22em;
-      color: var(--green);
-      text-shadow: 0 0 10px var(--green);
-      border: 1px solid rgba(57,255,20,0.25);
-      background: rgba(57,255,20,0.04);
-      padding: 5px 12px;
-      border-radius: 2px;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
     }
 
-    .blink-dot {
-      width: 7px;
-      height: 7px;
-      background: var(--green);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--green);
-      animation: blink 1.1s step-end infinite;
-      flex-shrink: 0;
-    }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-
-    /* Sync time display */
-    .header-sync {
-      text-align: right;
-      flex-shrink: 0;
-    }
-    .header-sync-label {
-      font-size: 0.46rem;
-      color: var(--phosphor-faint);
-      letter-spacing: 0.22em;
+    .sync-label {
+      font-family: var(--display);
+      font-weight: 300;
+      font-size: 0.62rem;
+      color: var(--text-lo);
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      display: block;
-      margin-bottom: 3px;
-    }
-    .header-sync-value {
-      font-size: 0.68rem;
-      color: var(--amber);
-      letter-spacing: 0.08em;
-      text-shadow: 0 0 10px rgba(255,179,0,0.4);
     }
 
-    /* ═══ MAIN ════════════════════════════════════════════════════ */
+    #last-sync-label {
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-mid);
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Main ────────────────────────────────────────────────── */
     main {
-      max-width: 1140px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 32px 20px 64px;
+      padding: 0 24px 80px;
     }
 
-    /* ═══ FEED ════════════════════════════════════════════════════ */
+    /* ── Feed ────────────────────────────────────────────────── */
     #feed {
       flex-direction: column;
-      gap: 44px;
+      gap: 64px;
+      padding-top: 48px;
     }
 
-    /* ═══ PLAYLIST PANEL (TV BEZEL) ═══════════════════════════════ */
-    .playlist-panel {
-      background: var(--bezel);
-      border-radius: 8px;
-      border: 2px solid var(--bezel-edge);
-      box-shadow:
-        0 0 0 1px #0a0906,
-        0 12px 48px rgba(0,0,0,0.8),
-        0 2px 0 rgba(255,255,255,0.02) inset,
-        0 -1px 0 rgba(0,0,0,0.5) inset;
-      overflow: hidden;
+    /* ── Playlist Section ────────────────────────────────────── */
+    .playlist-section {
       opacity: 0;
-      animation: panel-rise 0.6s cubic-bezier(0.22,1,0.36,1) forwards;
+      animation: section-enter 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
     }
-    @keyframes panel-rise {
-      from { opacity: 0; transform: translateY(24px); }
+
+    @keyframes section-enter {
+      from { opacity: 0; transform: translateY(20px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* Live panel gets amber glow */
-    .playlist-panel.is-live {
-      border-color: var(--amber-dim);
-      box-shadow:
-        0 0 0 1px #0a0906,
-        0 12px 48px rgba(0,0,0,0.8),
-        0 0 32px rgba(255,179,0,0.12),
-        0 2px 0 rgba(255,255,255,0.02) inset;
-    }
-
-    /* ─── Panel header ─── */
-    .panel-header {
-      display: flex;
-      align-items: stretch;
-      background: linear-gradient(180deg, #141210 0%, #0e0e0a 100%);
-      border-bottom: 2px solid var(--bezel-hi);
-      min-height: 78px;
-    }
-
-    /* Thumbnail strip */
-    .panel-thumb {
-      width: 110px;
-      flex-shrink: 0;
-      border-right: 1px solid var(--bezel-hi);
-      overflow: hidden;
-      background: #080806;
+    /* Hero banner */
+    .section-hero {
       position: relative;
+      width: 100%;
+      height: 220px;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 20px;
     }
-    .panel-thumb img {
+
+    .hero-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
-      filter: saturate(0.5) brightness(0.75);
-    }
-    .panel-thumb-ph {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      filter: brightness(0.6) saturate(0.7);
     }
 
-    /* Panel info */
-    .panel-info {
-      flex: 1;
-      padding: 12px 18px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 7px;
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(10,10,10,0) 0%,
+        rgba(10,10,10,0.3) 40%,
+        rgba(10,10,10,0.88) 75%,
+        rgba(10,10,10,0.97) 100%
+      );
     }
-    .panel-category {
-      font-size: 0.46rem;
-      color: var(--phosphor-faint);
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
+
+    .hero-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 24px 28px;
     }
-    .panel-name {
-      font-family: var(--brand);
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--phosphor);
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      line-height: 1.1;
-    }
-    .panel-actions {
+
+    /* Section header (no-hero variant) */
+    .section-title-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
     }
 
-    .live-badge {
-      font-size: 0.58rem;
-      letter-spacing: 0.12em;
-      padding: 3px 9px;
-      border-radius: 2px;
-      border: 1px solid;
-      white-space: nowrap;
-    }
-    .live-badge.active {
-      color: var(--amber);
-      border-color: var(--amber-dim);
-      background: rgba(255,179,0,0.07);
-      text-shadow: 0 0 8px var(--amber-glow);
-      animation: amber-pulse 2.4s ease-in-out infinite;
-    }
-    .live-badge.inactive {
-      color: var(--phosphor-faint);
-      border-color: var(--bezel-hi);
-      background: transparent;
-    }
-    @keyframes amber-pulse {
-      0%, 100% { box-shadow: none; opacity: 1; }
-      50%       { box-shadow: 0 0 12px rgba(255,179,0,0.3); opacity: 0.85; }
+    .section-title-row.no-hero {
+      margin-bottom: 10px;
     }
 
-    .open-btn {
-      font-size: 0.54rem;
-      color: var(--phosphor-dim);
-      letter-spacing: 0.15em;
-      text-decoration: none;
-      border: 1px solid var(--bezel-hi);
-      padding: 3px 9px;
-      border-radius: 2px;
-      transition: color 0.15s, border-color 0.15s, background 0.15s;
-    }
-    .open-btn:hover {
-      color: var(--amber);
-      border-color: var(--amber-dim);
-      background: rgba(255,179,0,0.05);
-    }
-
-    /* Counter block (right side of header) */
-    .panel-counter {
-      flex-shrink: 0;
-      border-left: 1px solid var(--bezel-hi);
-      padding: 12px 22px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      background: #080806;
-      min-width: 64px;
-    }
-    .counter-num {
-      font-family: var(--brand);
-      font-size: 1.7rem;
+    .section-title {
+      font-family: var(--display);
       font-weight: 700;
-      color: var(--amber);
-      text-shadow: 0 0 18px var(--amber-glow);
-      line-height: 1;
-    }
-    .counter-label {
-      font-size: 0.42rem;
-      color: var(--phosphor-faint);
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
+      font-size: 1.45rem;
+      color: var(--text-hi);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
     }
 
-    /* ─── Channel grid area ─── */
-    .panel-body {
-      padding: 16px;
-      background: #09090700;
+    /* Live pill badge */
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 11px 4px 9px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-radius: 999px;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    /* ═══ CHANNEL GRID ════════════════════════════════════════════ */
+    /* Meta row */
+    .section-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .section-meta span {
+      font-size: 0.83rem;
+      color: var(--text-lo);
+      font-weight: 400;
+    }
+
+    .open-playlist {
+      font-size: 0.83rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      opacity: 0.8;
+      transition: opacity 0.15s;
+    }
+
+    .open-playlist:hover { opacity: 1; }
+
+    /* ── Channel Grid ─────────────────────────────────────────── */
     .ch-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 1px;
-      background: var(--bezel-hi);
-      border: 1px solid var(--bezel-hi);
-      border-radius: 3px;
-      overflow: hidden;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
     }
 
-    /* ═══ CHANNEL CARD (EPG Flat Tile) ════════════════════════════ */
+    /* ── Channel Card (Glassmorphic) ──────────────────────────── */
     .ch-card {
-      position: relative;
       display: flex;
-      align-items: stretch;
-      height: 44px;
-      background: var(--surface);
-      cursor: pointer;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      min-height: 72px;
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 10px;
       text-decoration: none;
-      overflow: hidden;
-      transition: background 0.08s;
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease,
+                  transform 0.18s ease, box-shadow 0.18s ease;
     }
 
     .ch-card:hover {
-      background: var(--amber);
-      z-index: 1;
+      background: var(--glass-hover);
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(79,156,249,0.08);
     }
 
-    /* Channel number column */
-    .ch-num {
+    /* Avatar circle */
+    .ch-avatar {
       flex-shrink: 0;
-      width: 46px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #16110a;
-      border-right: 1px solid var(--bezel-hi);
-      font-size: 0.6rem;
-      font-weight: bold;
-      color: var(--amber-dim);
-      letter-spacing: 0.03em;
-      transition: background 0.08s, color 0.08s, border-color 0.08s;
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 0;
     }
 
-    .ch-card:hover .ch-num {
-      background: rgba(0,0,0,0.15);
-      color: #1a0e00;
-      border-right-color: rgba(0,0,0,0.18);
-    }
-
-    /* Channel name */
-    .ch-name {
+    /* Channel text block */
+    .ch-info {
       flex: 1;
+      min-width: 0;
       display: flex;
-      align-items: center;
-      padding: 0 12px;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .ch-name {
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-hi);
+      line-height: 1.3;
+    }
+
+    .ch-num {
+      font-family: var(--display);
+      font-weight: 300;
       font-size: 0.68rem;
-      color: var(--phosphor);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      transition: color 0.08s;
+      color: var(--text-lo);
+      letter-spacing: 0.04em;
     }
 
-    .ch-card:hover .ch-name {
-      color: #0a0800;
-    }
-
-    /* "▶ TUNE IN" hint */
-    .ch-tune {
+    /* Play arrow */
+    .ch-play {
       flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      padding-right: 10px;
-      font-size: 0.42rem;
-      letter-spacing: 0.18em;
-      color: transparent;
-      transition: color 0.08s;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.18);
+      transition: color 0.18s ease;
     }
 
-    .ch-card:hover .ch-tune {
-      color: rgba(0,0,0,0.42);
+    .ch-card:hover .ch-play {
+      color: var(--accent);
     }
 
-    /* ═══ STATE SCREENS ══════════════════════════════════════════ */
+    /* ── State Screens ────────────────────────────────────────── */
     .state-wrap {
       flex-direction: column;
       align-items: center;
-      gap: 22px;
+      gap: 20px;
       text-align: center;
-      padding: 100px 16px;
+      padding: 120px 16px;
     }
 
-    @keyframes noise-shift {
-      0%   { background-position: 0 0;      }
-      50%  { background-position: 5px -3px; }
-      100% { background-position: -3px 4px; }
+    /* Spinner */
+    .spinner {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid rgba(79,156,249,0.15);
+      border-top-color: var(--accent);
+      animation: spin 0.75s linear infinite;
     }
 
-    /* Retro static block for loading / error / empty */
-    .tv-static {
-      width: 128px;
-      height: 96px;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      background-size: 100% 100%;
-      border-radius: 8px;
-      border: 2px solid var(--bezel-hi);
-      opacity: 0.28;
-      animation: noise-shift 0.12s steps(3) infinite;
-      box-shadow: inset 0 0 24px rgba(0,0,0,0.9), 0 0 0 1px #050503;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
-    .state-msg {
-      font-size: 0.75rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-    }
-    .state-msg.loading-msg {
-      color: var(--phosphor-dim);
-      animation: flicker 3.5s ease-in-out infinite;
-    }
-    .state-msg.error-msg   { color: var(--amber); }
-    .state-msg.empty-msg   { color: var(--phosphor-faint); }
-
-    @keyframes flicker {
-      0%, 90%, 100% { opacity: 1; }
-      91%           { opacity: 0.3; }
-      92%           { opacity: 0.9; }
-      93%           { opacity: 0.2; }
-      94%           { opacity: 0.85; }
+    .state-text {
+      font-family: var(--display);
+      font-weight: 300;
+      font-size: 0.88rem;
+      color: var(--text-lo);
+      letter-spacing: 0.04em;
     }
 
-    /* Animated ellipsis */
-    .dots::after {
-      content: '';
-      animation: ellipsis 1.8s steps(4, end) infinite;
-    }
-    @keyframes ellipsis {
-      0%   { content: ''; }
-      25%  { content: '.'; }
-      50%  { content: '..'; }
-      75%  { content: '...'; }
+    .state-icon {
+      opacity: 0.35;
     }
 
-    /* ═══ FOOTER ═════════════════════════════════════════════════ */
+    .error-text {
+      color: rgba(249,100,100,0.8);
+    }
+
+    /* ── Footer ───────────────────────────────────────────────── */
     footer {
       text-align: center;
-      padding: 0 16px 48px;
-      font-size: 0.52rem;
-      color: var(--phosphor-faint);
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
+      padding: 0 24px 40px;
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: var(--text-lo);
+      letter-spacing: 0.02em;
     }
 
-    /* ═══ RESPONSIVE ═════════════════════════════════════════════ */
+    /* ── Responsive ───────────────────────────────────────────── */
     @media (max-width: 640px) {
+      .header-inner { padding: 0 16px; }
+      main { padding: 0 16px 60px; }
+      #feed { gap: 48px; padding-top: 32px; }
       .ch-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-      .panel-name { font-size: 0.82rem; }
-      .brand-name { font-size: 0.76rem; }
-      .panel-thumb { display: none; }
-      .header-inner { padding: 10px 14px 12px; }
-      .on-air { display: none; }
+      .section-hero { height: 160px; }
+      .section-title { font-size: 1.15rem; }
+      .sync-info { display: none; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!-- HEADER                                                      -->
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <div class="tv-header">
-    <div class="header-stripe"></div>
+  <!-- ══ HEADER ══════════════════════════════════════════════════ -->
+  <header class="site-header">
     <div class="header-inner">
 
-      <!-- Brand -->
-      <div class="tv-brand">
-        <!-- Antenna SVG -->
-        <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
-          <line x1="17" y1="30" x2="17" y2="13" stroke="#ffb300" stroke-width="2" stroke-linecap="round"/>
-          <line x1="17" y1="13" x2="4"  y2="4"  stroke="#ffb300" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="17" y1="13" x2="30" y2="4"  stroke="#ffb300" stroke-width="1.5" stroke-linecap="round"/>
-          <circle cx="17" cy="13" r="2.2" fill="#ffb300" opacity="0.85"/>
-          <rect x="11" y="30" width="12" height="3" rx="1.5" fill="#28241a"/>
-          <path d="M11 10 Q17 6 23 10" stroke="#ffb300" stroke-width="0.9" fill="none" opacity="0.45"/>
-          <path d="M7 7  Q17 2 27 7"  stroke="#ffb300" stroke-width="0.9" fill="none" opacity="0.2"/>
+      <div class="brand">
+        <!-- Pulse ripple icon -->
+        <svg class="brand-icon" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="13" cy="13" r="4" fill="#4f9cf9"/>
+          <circle cx="13" cy="13" r="4" fill="#4f9cf9" opacity="0.25">
+            <animate attributeName="r" values="4;9;4" dur="2.2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.25;0;0.25" dur="2.2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="13" cy="13" r="4" fill="#4f9cf9" opacity="0.12">
+            <animate attributeName="r" values="4;13;4" dur="2.2s" begin="0.4s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.12;0;0.12" dur="2.2s" begin="0.4s" repeatCount="indefinite"/>
+          </circle>
         </svg>
-        <div class="brand-text">
-          <span class="brand-name">LIVEPULSE&#8209;3000</span>
-          <span class="brand-sub">Channel Monitor System</span>
-        </div>
+        <span class="brand-name">LivePulse</span>
       </div>
 
-      <!-- On Air -->
-      <div class="on-air">
-        <span class="blink-dot"></span>
-        ON AIR
-      </div>
-
-      <!-- Sync info -->
-      <div class="header-sync">
-        <span class="header-sync-label">Last Sync</span>
-        <span class="header-sync-value" id="last-sync-label">——————</span>
+      <div class="sync-info">
+        <span class="sync-label">Last sync</span>
+        <span id="last-sync-label">—</span>
       </div>
 
     </div>
-  </div>
+  </header>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!-- MAIN                                                        -->
-  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- ══ MAIN ════════════════════════════════════════════════════ -->
   <main>
 
     <div id="state-loading" class="state-wrap" style="display:flex">
-      <div class="tv-static"></div>
-      <p class="state-msg loading-msg"><span class="dots">ACQUIRING SIGNAL</span></p>
+      <div class="spinner"></div>
+      <p class="state-text">Loading</p>
     </div>
 
     <div id="state-error" class="state-wrap" style="display:none">
-      <div class="tv-static"></div>
-      <p class="state-msg error-msg" id="error-msg">SIGNAL LOST</p>
+      <svg class="state-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 4L36 34H4L20 4Z" stroke="rgba(249,100,100,0.7)" stroke-width="2" stroke-linejoin="round" fill="none"/>
+        <line x1="20" y1="16" x2="20" y2="24" stroke="rgba(249,100,100,0.7)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="29" r="1.2" fill="rgba(249,100,100,0.7)"/>
+      </svg>
+      <p class="state-text error-text" id="error-msg">Something went wrong</p>
     </div>
 
     <div id="state-empty" class="state-wrap" style="display:none">
-      <div class="tv-static"></div>
-      <p class="state-msg empty-msg">NO BROADCAST DATA &mdash; AWAITING FIRST SYNC</p>
+      <svg class="state-icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="10" width="32" height="22" rx="3" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" fill="none"/>
+        <line x1="13" y1="34" x2="27" y2="34" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="20" y1="32" x2="20" y2="34" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="20" cy="21" r="4" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" fill="none"/>
+        <line x1="23" y1="24" x2="26" y2="27" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <p class="state-text">No playlists configured yet</p>
     </div>
 
     <div id="feed" style="display:none"></div>
@@ -592,11 +455,9 @@
 
   <footer id="footer"></footer>
 
-  <!-- ══════════════════════════════════════════════════════════ -->
-  <!-- SCRIPT                                                      -->
-  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- ══ SCRIPT ══════════════════════════════════════════════════ -->
   <script>
-    /* ── Helpers ─────────────────────────────────────────────── */
+    /* ── Helpers ──────────────────────────────────────────────── */
     function el(tag, attrs) {
       var children = Array.prototype.slice.call(arguments, 2);
       var node = document.createElement(tag);
@@ -616,116 +477,112 @@
     }
 
     function fmtDate(iso) {
-      if (!iso) return '——————';
+      if (!iso) return '—';
       try {
         return new Date(iso)
-          .toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-          .toUpperCase();
-      } catch(e) { return String(iso).toUpperCase(); }
+          .toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      } catch(e) { return String(iso); }
     }
 
     function pad2(n) { return String(n).padStart(2, '0'); }
 
-    /* ── Build one channel card ──────────────────────────────── */
+    /* ── Avatar gradient presets (6 hues, all muted to fit dark bg) */
+    var AVATAR_GRADIENTS = [
+      'linear-gradient(135deg, rgba(79,156,249,0.32), rgba(79,156,249,0.08))',
+      'linear-gradient(135deg, rgba(147,112,219,0.32), rgba(147,112,219,0.08))',
+      'linear-gradient(135deg, rgba(64,200,164,0.32), rgba(64,200,164,0.08))',
+      'linear-gradient(135deg, rgba(249,150,79,0.32), rgba(249,150,79,0.08))',
+      'linear-gradient(135deg, rgba(249,79,130,0.32), rgba(249,79,130,0.08))',
+      'linear-gradient(135deg, rgba(116,199,100,0.32), rgba(116,199,100,0.08))'
+    ];
+
+    /* ── Build one channel card ───────────────────────────────── */
     function buildChannelCard(ch, idx) {
       var name    = ch.name || ch.id;
       var liveUrl = 'https://www.youtube.com/channel/' + ch.id + '/live';
+      var initial = name.replace(/[^a-zA-Z0-9]/g, '').charAt(0).toUpperCase() || '#';
 
       var card = el('a', {
         className: 'ch-card',
         href:      liveUrl,
         target:    '_blank',
         rel:       'noopener noreferrer',
-        title:     'Tune in: ' + name
+        title:     name
       });
 
-      /* Left: channel number column */
-      card.appendChild(el('span', { className: 'ch-num' }, 'CH ' + pad2(idx + 1)));
-      /* Center: channel name */
-      card.appendChild(el('span', { className: 'ch-name' }, name));
-      /* Right: tune-in hint (visible on hover) */
-      card.appendChild(el('span', { className: 'ch-tune' }, '\u25b6 TUNE IN'));
+      /* Avatar circle */
+      var avatar = el('div', { className: 'ch-avatar' }, initial);
+      avatar.style.background = AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length];
+
+      /* Text block */
+      var info = el('div', { className: 'ch-info' });
+      info.appendChild(el('span', { className: 'ch-name' }, name));
+      info.appendChild(el('span', { className: 'ch-num'  }, 'CH ' + pad2(idx + 1)));
+
+      /* Play arrow */
+      var play = el('span', { className: 'ch-play' }, '\u25b6');
+
+      card.appendChild(avatar);
+      card.appendChild(info);
+      card.appendChild(play);
 
       return card;
     }
 
-    /* ── Build one playlist panel ────────────────────────────── */
+    /* ── Build one playlist section ───────────────────────────── */
     function buildPlaylistPanel(p, panelIdx) {
       var isLive   = p.liveStreamsFound > 0;
       var channels = p.channels || [];
 
-      /* ─ Panel wrapper ─ */
-      var panel = el('div', {
-        className: 'playlist-panel' + (isLive ? ' is-live' : ''),
-        style: 'animation-delay:' + (panelIdx * 0.15) + 's'
-      });
+      var section = document.createElement('section');
+      section.className = 'playlist-section';
+      section.style.animationDelay = (panelIdx * 0.1) + 's';
 
-      /* ─ Header ─ */
-      var header = el('div', { className: 'panel-header' });
-
-      /* Thumbnail strip */
-      var thumb = el('div', { className: 'panel-thumb' });
+      /* Hero banner (if thumbnail available) */
       if (p.thumbnailUrl) {
-        thumb.appendChild(el('img', { src: p.thumbnailUrl, alt: p.name, loading: 'lazy' }));
+        var hero = el('div', { className: 'section-hero' });
+        hero.appendChild(el('img', { className: 'hero-img', src: p.thumbnailUrl, alt: p.name, loading: 'lazy' }));
+        hero.appendChild(el('div', { className: 'hero-overlay' }));
+
+        var heroContent = el('div', { className: 'hero-content' });
+        var titleRow = el('div', { className: 'section-title-row' });
+        titleRow.appendChild(el('h2', { className: 'section-title' }, p.name));
+        if (isLive) {
+          titleRow.appendChild(el('span', { className: 'live-pill' }, '\u25cf\u00a0' + p.liveStreamsFound + ' LIVE'));
+        }
+        heroContent.appendChild(titleRow);
+        hero.appendChild(heroContent);
+        section.appendChild(hero);
       } else {
-        /* Placeholder — small static block */
-        var phWrap = el('div', { className: 'panel-thumb-ph' });
-        var phNs = 'http://www.w3.org/2000/svg';
-        var phSvg = document.createElementNS(phNs, 'svg');
-        phSvg.setAttribute('width', '36'); phSvg.setAttribute('height', '28');
-        phSvg.setAttribute('viewBox', '0 0 36 28'); phSvg.setAttribute('fill', 'none');
-        var phBg = document.createElementNS(phNs, 'rect');
-        phBg.setAttribute('width', '36'); phBg.setAttribute('height', '28');
-        phBg.setAttribute('fill', '#0e0e0a');
-        var phPoly = document.createElementNS(phNs, 'polygon');
-        phPoly.setAttribute('points', '13,10 26,14 13,18');
-        phPoly.setAttribute('fill', '#2a2418');
-        phSvg.appendChild(phBg); phSvg.appendChild(phPoly);
-        phWrap.appendChild(phSvg);
-        thumb.appendChild(phWrap);
+        /* No thumbnail: flat title row */
+        var titleRow = el('div', { className: 'section-title-row no-hero' });
+        titleRow.appendChild(el('h2', { className: 'section-title' }, p.name));
+        if (isLive) {
+          titleRow.appendChild(el('span', { className: 'live-pill' }, '\u25cf\u00a0' + p.liveStreamsFound + ' LIVE'));
+        }
+        section.appendChild(titleRow);
       }
-      header.appendChild(thumb);
 
-      /* Info block */
-      var info = el('div', { className: 'panel-info' });
-      info.appendChild(el('span', { className: 'panel-category' }, 'Playlist'));
-      info.appendChild(el('div',  { className: 'panel-name' }, p.name));
-
-      var actions = el('div', { className: 'panel-actions' });
-      var badgeText = isLive ? ('\u25cf ' + p.liveStreamsFound + ' LIVE') : '\u25cb OFFLINE';
-      actions.appendChild(el('span', {
-        className: 'live-badge ' + (isLive ? 'active' : 'inactive')
-      }, badgeText));
-      actions.appendChild(el('a', {
-        className: 'open-btn',
+      /* Meta row */
+      var meta = el('div', { className: 'section-meta' });
+      meta.appendChild(el('span', null, channels.length + ' channel' + (channels.length !== 1 ? 's' : '')));
+      meta.appendChild(el('a', {
+        className: 'open-playlist',
         href:      p.youtubeUrl,
         target:    '_blank',
         rel:       'noopener noreferrer'
-      }, '\u25b6 OPEN PLAYLIST'));
-      info.appendChild(actions);
-      header.appendChild(info);
+      }, 'Open playlist \u2192'));
+      section.appendChild(meta);
 
-      /* Channel counter */
-      var counter = el('div', { className: 'panel-counter' });
-      counter.appendChild(el('div', { className: 'counter-num' },   String(channels.length)));
-      counter.appendChild(el('div', { className: 'counter-label' }, 'Channels'));
-      header.appendChild(counter);
-
-      panel.appendChild(header);
-
-      /* ─ Channel grid body ─ */
-      var body = el('div', { className: 'panel-body' });
+      /* Channel grid */
       var grid = el('div', { className: 'ch-grid' });
-      channels.forEach(function(ch, i) {
-        grid.appendChild(buildChannelCard(ch, i));
-      });
-      body.appendChild(grid);
-      panel.appendChild(body);
+      channels.forEach(function(ch, i) { grid.appendChild(buildChannelCard(ch, i)); });
+      section.appendChild(grid);
 
-      return panel;
+      return section;
     }
 
-    /* ── State switcher ──────────────────────────────────────── */
+    /* ── State switcher ───────────────────────────────────────── */
     function show(id) {
       ['state-loading', 'state-error', 'state-empty', 'feed'].forEach(function(s) {
         var node = document.getElementById(s);
@@ -734,16 +591,15 @@
       });
     }
 
-    /* ── Fetch and render ────────────────────────────────────── */
+    /* ── Fetch and render ─────────────────────────────────────── */
     fetch('/api/status')
       .then(function(r) {
         if (!r.ok) return r.json().then(function(b) { throw new Error(b.error || 'HTTP ' + r.status); });
         return r.json();
       })
       .then(function(data) {
-        /* Update sync timestamp */
         var syncEl = document.getElementById('last-sync-label');
-        syncEl.textContent = data.lastSyncAt ? fmtDate(data.lastSyncAt) : '——————';
+        if (syncEl) syncEl.textContent = data.lastSyncAt ? fmtDate(data.lastSyncAt) : '—';
 
         if (!data.playlists || data.playlists.length === 0) {
           show('state-empty');
@@ -751,18 +607,16 @@
         }
 
         var feed = document.getElementById('feed');
-        data.playlists.forEach(function(p, i) {
-          feed.appendChild(buildPlaylistPanel(p, i));
-        });
+        data.playlists.forEach(function(p, i) { feed.appendChild(buildPlaylistPanel(p, i)); });
 
         show('feed');
         var ft = document.getElementById('footer');
-        if (ft) ft.textContent = 'DATA FETCHED  \u25c8  ' + fmtDate(data.generatedAt);
+        if (ft && data.generatedAt) ft.textContent = 'Updated ' + fmtDate(data.generatedAt);
       })
       .catch(function(err) {
         show('state-error');
         var errEl = document.getElementById('error-msg');
-        if (errEl) errEl.textContent = 'SIGNAL LOST \u2014 ' + (err.message || 'UNKNOWN ERROR').toUpperCase();
+        if (errEl) errEl.textContent = err.message || 'Could not load data';
       });
   </script>
 
