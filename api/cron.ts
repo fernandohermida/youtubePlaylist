@@ -19,6 +19,16 @@ export default async function handler(
   const startTime = Date.now();
 
   try {
+    // Authentication check
+    const authHeader = req.headers['authorization'];
+    const expectedToken = process.env.CRON_SECRET_TOKEN;
+
+    if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
+      logger.warn('Unauthorized cron access attempt');
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
     logger.info('Starting YouTube Live Playlist sync job');
 
     const clientId = process.env.YOUTUBE_OAUTH_CLIENT_ID;
