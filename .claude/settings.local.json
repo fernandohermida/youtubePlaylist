@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm install:*)",
       "Skill(frontend-design)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npm run setup-oauth:*)"
     ]
   }
 }
